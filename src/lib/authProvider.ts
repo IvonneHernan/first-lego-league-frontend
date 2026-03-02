@@ -1,26 +1,11 @@
-// ============================================================
-// PATRÓN STRATEGY — AuthProvider
-// ============================================================
-//
-// Componentes del patrón:
-//   • AuthStrategy      → interfaz Strategy
-//   • ServerAuthStrategy, ClientAuthStrategy
-//                       → ConcreteStrategy
-//   • halClient.ts      → Context (usa la estrategia sin conocer su detalle)
-// ============================================================
-
 export const AUTH_COOKIE_NAME = "APP_AUTH";
 
-// ------------------------------------------------------------------
-// Strategy (interfaz)
-// ------------------------------------------------------------------
+// Strategy interface — defines how to obtain the auth credentials
 export interface AuthStrategy {
   getAuth(): Promise<string | null>;
 }
 
-// ------------------------------------------------------------------
-// ConcreteStrategy A — Lee la cookie desde el servidor (Next.js SSR)
-// ------------------------------------------------------------------
+// Reads the auth cookie from the server side (Next.js SSR)
 export class ServerAuthStrategy implements AuthStrategy {
   async getAuth(): Promise<string | null> {
     const { cookies } = await import("next/headers");
@@ -29,9 +14,7 @@ export class ServerAuthStrategy implements AuthStrategy {
   }
 }
 
-// ------------------------------------------------------------------
-// ConcreteStrategy B — Lee la cookie / localStorage desde el cliente
-// ------------------------------------------------------------------
+// Reads the auth cookie or localStorage from the browser
 export class ClientAuthStrategy implements AuthStrategy {
   async getAuth(): Promise<string | null> {
     const cookie = new RegExp(`${AUTH_COOKIE_NAME}=([^;]+)`).exec(
@@ -42,14 +25,8 @@ export class ClientAuthStrategy implements AuthStrategy {
   }
 }
 
-// ------------------------------------------------------------------
-// Factories de conveniencia (compatibilidad con el código existente)
-// ------------------------------------------------------------------
-
-/** Para uso en Server Components / API routes de Next.js */
 export const serverAuthProvider: AuthStrategy = new ServerAuthStrategy();
 
-/** Para uso en Client Components */
 export function clientAuthProvider(): AuthStrategy {
   return new ClientAuthStrategy();
 }
