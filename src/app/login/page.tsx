@@ -34,6 +34,7 @@ export default function LoginPage() {
             sameSite: "strict",
             httpOnly: false,
         });
+        localStorage.setItem(AUTH_COOKIE_NAME, authorization);
         const service = new UsersService(clientAuthProvider);
         const user = await service.getCurrentUser();
         setUser(user);
@@ -44,6 +45,7 @@ export default function LoginPage() {
             router.push(`/users/${data.username}`);
         }).catch(() => {
             deleteCookie(AUTH_COOKIE_NAME);
+            localStorage.removeItem(AUTH_COOKIE_NAME);
             setErrorMessage("Login failed");
         });
     };

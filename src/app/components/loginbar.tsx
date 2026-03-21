@@ -16,6 +16,7 @@ export default function Loginbar() {
 
     function logout() {
         deleteCookie(AUTH_COOKIE_NAME);
+        localStorage.removeItem(AUTH_COOKIE_NAME);
         setUser(null);
         router.push("/");
     }
