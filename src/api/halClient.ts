@@ -22,6 +22,16 @@ export function mergeHalArray<T>(objs: Resource[]): (T & Resource)[] {
 }
 
 /**
+ * Safely parses response body as HAL+JSON, returning null for 204 No Content responses
+ */
+async function parseResponseBody(res: Response): Promise<Resource | null> {
+    if (res.status === 204 || res.headers.get("content-length") === "0") {
+        return null;
+    }
+    return halfred.parse(await res.json());
+}
+
+/**
  * Handles fetch errors and HTTP status codes, converting them to specific error types
  */
 async function handleApiError(error: unknown, res?: Response): Promise<never> {
@@ -38,7 +48,7 @@ async function handleApiError(error: unknown, res?: Response): Promise<never> {
         let errorMessage: string | undefined;
         try {
             const contentType = res.headers.get("content-type");
-            if (contentType?.includes("application/json")) {
+            if (contentType?.toLowerCase().includes("json")) {
                 const errorBody = await res.json();
                 errorMessage = errorBody.message || errorBody.error || errorBody.detail;
             }
@@ -106,7 +116,73 @@ export async function getHal(path: string, authProvider: { getAuth: () => Promis
     }
 }
 
-export async function postHal(path: string, body: Resource, authProvider: { getAuth: () => Promise<string | null> }): Promise<Resource> {
+export async function putHal(path: string, body: Resource, authProvider: { getAuth: () => Promise<string | null> }): Promise<Resource | null> {
+    const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+    const authorization = await authProvider.getAuth();
+    
+    try {
+        const res = await fetch(url, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/hal+json",
+                ...(authorization ? { Authorization: authorization } : {}),
+            },
+            body: JSON.stringify(body),
+            cache: "no-store",
+        });
+        
+        if (!res.ok) {
+            await handleApiError(new Error(`HTTP ${res.status}`), res);
+            throw new Error("Unreachable");
+        }
+        
+        return await parseResponseBody(res);
+    } catch (error) {
+        // If it's already a custom error, rethrow it
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        // Otherwise, handle it as a network error
+        await handleApiError(error);
+        // TypeScript doesn't know handleApiError always throws, so we need this line
+        throw new Error("Unreachable");
+    }
+}
+
+export async function deleteHal(path: string, authProvider: { getAuth: () => Promise<string | null> }): Promise<Resource | null> {
+    const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+    const authorization = await authProvider.getAuth();
+    
+    try {
+        const res = await fetch(url, {
+            method: "DELETE",
+            headers: {
+                "Accept": "application/hal+json",
+                ...(authorization ? { Authorization: authorization } : {}),
+            },
+            cache: "no-store",
+        });
+        
+        if (!res.ok) {
+            await handleApiError(new Error(`HTTP ${res.status}`), res);
+            throw new Error("Unreachable");
+        }
+        
+        return await parseResponseBody(res);
+    } catch (error) {
+        // If it's already a custom error, rethrow it
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        // Otherwise, handle it as a network error
+        await handleApiError(error);
+        // TypeScript doesn't know handleApiError always throws, so we need this line
+        throw new Error("Unreachable");
+    }
+}
+
+export async function postHal(path: string, body: Resource, authProvider: { getAuth: () => Promise<string | null> }): Promise<Resource | null> {
     const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
     const authorization = await authProvider.getAuth();
     
@@ -127,7 +203,7 @@ export async function postHal(path: string, body: Resource, authProvider: { getA
             throw new Error("Unreachable");
         }
         
-        return halfred.parse(await res.json());
+        return await parseResponseBody(res);
     } catch (error) {
         // If it's already a custom error, rethrow it
         if (error instanceof ApiError) {
