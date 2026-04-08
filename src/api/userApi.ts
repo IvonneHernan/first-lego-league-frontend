@@ -2,6 +2,7 @@ import type { AuthStrategy } from "@/lib/authProvider";
 import { User } from "@/types/user";
 import { fetchHalCollection, fetchHalResource, createHalResource, patchHal, mergeHal } from "./halClient";
 import { Resource } from "halfred";
+import { ApiError } from "@/types/errors";
 
 export class UsersService {
     constructor(private readonly authStrategy: AuthStrategy) {
@@ -31,7 +32,7 @@ export class UsersService {
         const userId = encodeURIComponent(id);
         const resource = await patchHal(`/users/${userId}`, data as Resource, this.authStrategy);
         if (!resource) {
-            throw new Error('No response from server after update');
+            throw new ApiError('No response from server after update', 500, true);
         }
         return mergeHal<User>(resource);
     }
