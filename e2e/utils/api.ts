@@ -35,6 +35,10 @@ function getAdminTestUser(): BasicAuthCredentials {
     return { username, password };
 }
 
+export function hasAdminTestUser() {
+    return Boolean(process.env.E2E_ADMIN_USERNAME && process.env.E2E_ADMIN_PASSWORD);
+}
+
 function assertSafeWriteTarget(baseUrl: string) {
     const hostname = new URL(baseUrl).hostname;
     const allowRemoteWrites = process.env.E2E_ALLOW_REMOTE_WRITES === "true";
