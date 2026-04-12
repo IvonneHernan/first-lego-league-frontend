@@ -1,12 +1,8 @@
 import { APIRequestContext, expect } from "@playwright/test";
 import { TestTeam, TestUser } from "./test-data";
 
-const ADMIN_TEST_USER = {
-    username: "admin",
-    password: "password",
-} as const;
-
 type BasicAuthCredentials = Pick<TestUser, "username" | "password">;
+const ALLOWED_WRITE_HOSTS = new Set(["localhost", "127.0.0.1", "api.firstlegoleague.win"]);
 
 function trimTrailingSlashes(value: string) {
     let end = value.length;
@@ -28,6 +24,30 @@ export function getApiBaseUrl() {
     return trimTrailingSlashes(baseUrl);
 }
 
+function getAdminTestUser(): BasicAuthCredentials {
+    const username = process.env.E2E_ADMIN_USERNAME;
+    const password = process.env.E2E_ADMIN_PASSWORD;
+
+    if (!username || !password) {
+        throw new Error("E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD must be set for team creation helpers.");
+    }
+
+    return { username, password };
+}
+
+function assertSafeWriteTarget(baseUrl: string) {
+    const hostname = new URL(baseUrl).hostname;
+    const allowRemoteWrites = process.env.E2E_ALLOW_REMOTE_WRITES === "true";
+
+    if (!ALLOWED_WRITE_HOSTS.has(hostname)) {
+        throw new Error(`Refusing to run E2E write helpers against unapproved host: ${hostname}.`);
+    }
+
+    if (!allowRemoteWrites) {
+        throw new Error("E2E_ALLOW_REMOTE_WRITES must be set to true before running E2E write helpers.");
+    }
+}
+
 function getBasicAuthHeader(user: BasicAuthCredentials) {
     const token = Buffer.from(`${user.username}:${user.password}`).toString("base64");
     return `Basic ${token}`;
@@ -35,6 +55,7 @@ function getBasicAuthHeader(user: BasicAuthCredentials) {
 
 export async function createUserViaApi(request: APIRequestContext, user: TestUser) {
     const baseUrl = getApiBaseUrl();
+    assertSafeWriteTarget(baseUrl);
     const response = await request.post(`${baseUrl}/users`, {
         headers: {
             Accept: "application/hal+json",
@@ -55,11 +76,14 @@ export async function createTeamViaApi(
     team: TestTeam
 ) {
     const baseUrl = getApiBaseUrl();
+    const adminUser = getAdminTestUser();
+
+    assertSafeWriteTarget(baseUrl);
     const response = await request.post(`${baseUrl}/teams`, {
         headers: {
             Accept: "application/hal+json",
             "Content-Type": "application/json",
-            Authorization: getBasicAuthHeader(ADMIN_TEST_USER),
+            Authorization: getBasicAuthHeader(adminUser),
         },
         data: {
             name: team.name,
