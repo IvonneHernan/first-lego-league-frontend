@@ -6,17 +6,21 @@ import Link from "next/link";
 
 interface LeaderboardPageProps {
     readonly params: Promise<{ id: string }>;
+    readonly searchParams?: Promise<{ page?: string; size?: string }>;
 }
 
 export default async function LeaderboardPage(props: Readonly<LeaderboardPageProps>) {
     const { id } = await props.params;
+    const searchParams = (await props.searchParams) ?? {};
+    const page = Number(searchParams.page ?? "0");
+    const size = Number(searchParams.size ?? "20");
     const service = new LeaderboardService(serverAuthProvider);
 
     let items: LeaderboardItem[] = [];
     let error: string | null = null;
 
     try {
-        const data = await service.getEditionLeaderboard(id);
+        const data = await service.getEditionLeaderboard(id, page, size);
         items = data.items;
     } catch (e) {
         console.error("Failed to fetch leaderboard:", e);
@@ -54,7 +58,7 @@ export default async function LeaderboardPage(props: Readonly<LeaderboardPagePro
                                     const isTop3 = item.position <= 3;
                                     return (
                                         <tr key={item.teamId} className="border-b last:border-0">
-                                            <td className="py-3 pr-4 text-zinc-400 text-sm">
+                                            <td className={`py-3 pr-4 text-sm ${isTop3 ? "font-semibold text-zinc-900" : "text-zinc-400"}`}>
                                                 {item.position}
                                             </td>
                                             <td className={`py-3 pr-4 ${isTop3 ? "font-semibold text-zinc-900" : ""}`}>

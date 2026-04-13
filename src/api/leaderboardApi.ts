@@ -14,9 +14,19 @@ export class LeaderboardService {
     constructor(private readonly authStrategy: AuthStrategy) {}
 
     async getEditionLeaderboard(editionId: string, page = 0, size = 20): Promise<LeaderboardPageResponse> {
+        if (!Number.isInteger(page) || page < 0) {
+            throw new ValidationError("Page must be a non-negative integer.");
+        }
+        if (!Number.isInteger(size) || size <= 0) {
+            throw new ValidationError("Size must be a positive integer.");
+        }
+
         const encodedId = encodeURIComponent(editionId);
         const url = `${API_BASE_URL}/leaderboards/editions/${encodedId}?page=${page}&size=${size}`;
         const authorization = await this.authStrategy.getAuth();
+
+        const abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController.abort(), 10_000);
 
         let res: Response;
         try {
@@ -26,10 +36,16 @@ export class LeaderboardService {
                     ...(authorization ? { Authorization: authorization } : {}),
                 },
                 cache: "no-store",
+                signal: abortController.signal,
             });
         } catch (e) {
+            if (e instanceof DOMException && e.name === "AbortError") {
+                throw new NetworkError("Request timed out. Please try again.", e);
+            }
             if (e instanceof TypeError) throw new NetworkError(undefined, e);
             throw e;
+        } finally {
+            clearTimeout(timeoutId);
         }
 
         if (!res.ok) {
