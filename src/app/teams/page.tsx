@@ -5,6 +5,8 @@ import PageShell from "@/app/components/page-shell";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { ApiError, parseErrorMessage } from "@/types/errors";
 import { Team } from "@/types/team";
+import Link from "next/link";
+import { getEncodedResourceId } from "@/lib/halRoute";
 
 export const dynamic = "force-dynamic";
 
@@ -96,11 +98,21 @@ export default async function TeamsPage() {
 
                 {!error && teams.length > 0 && (
                     <ul className="list-grid">
-                        {teams.map((team, index) => (
-                            <li key={getTeamKey(team, index)}>
-                                <TeamCard team={team} />
-                            </li>
-                        ))}
+                        {teams.map((team, index) => {
+                            const teamId = getEncodedResourceId(team.uri);
+                            const href = teamId ? `/teams/${teamId}` : null;
+                            return (
+                                <li key={getTeamKey(team, index)}>
+                                    {href ? (
+                                        <Link href={href} className="block h-full transition hover:bg-zinc-50 dark:hover:bg-zinc-900 group">
+                                            <TeamCard team={team} />
+                                        </Link>
+                                    ) : (
+                                        <TeamCard team={team} />
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 )}
             </div>

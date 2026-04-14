@@ -97,11 +97,11 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                                             >
                                                 {href ? (
                                                     <Link href={href} className="font-medium">
-                                                        {team.name ?? `Team ${index + 1}`}
+                                                        {team.name ?? team.id ?? `Team ${index + 1}`}
                                                     </Link>
                                                 ) : (
                                                     <span className="font-medium">
-                                                        {team.name ?? `Team ${index + 1}`}
+                                                        {team.name ?? team.id ?? `Team ${index + 1}`}
                                                     </span>
                                                 )}
                                             </li>

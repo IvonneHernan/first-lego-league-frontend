@@ -1,21 +1,18 @@
-import halfred, { Resource } from "halfred";
 import {
     ApiError,
-    NotFoundError,
-    NetworkError,
     AuthenticationError,
+    NetworkError,
+    NotFoundError,
     ServerError,
     ValidationError,
 } from "@/types/errors";
+import halfred, { Resource } from "halfred";
 
 const PROD_API_BASE_URL = "https://api.firstlegoleague.win";
 type HalRequestBody = Record<string, unknown> | Resource;
 
 // Env variables starting with NEXT_PUBLIC_ are available to the client.
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL
-    || process.env.NEXT_PUBLIC_API_BASE_URL
-    || PROD_API_BASE_URL;
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || PROD_API_BASE_URL;
 
 export function mergeHal<T>(obj: Resource): (T & Resource) {
     return Object.assign(obj, halfred.parse(obj)) as T & Resource;
