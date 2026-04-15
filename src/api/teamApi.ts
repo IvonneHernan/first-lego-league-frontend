@@ -25,41 +25,61 @@ export class TeamsService {
     constructor(private readonly authStrategy: AuthStrategy) {}
 
     async getTeams(): Promise<Team[]> {
-        return fetchHalCollection<Team>('/teams', this.authStrategy, 'teams');
+        return fetchHalCollection<Team>(
+            "/teams",
+            this.authStrategy,
+            "teams"
+        );
     }
 
     async getTeamById(id: string): Promise<Team> {
         const teamId = getSafeEncodedId(id);
-        return fetchHalResource<Team>(`/teams/${teamId}`, this.authStrategy);
+
+        return fetchHalResource<Team>(
+            `/teams/${teamId}`,
+            this.authStrategy
+        );
     }
 
     async getTeamCoach(id: string): Promise<User[]> {
         const teamId = getSafeEncodedId(id);
+
         return fetchHalCollection<User>(
             `/teams/${teamId}/trainedBy`,
             this.authStrategy,
-            'coaches'
+            "coaches"
         );
     }
 
-    async getTeamMembers(teamId: string): Promise<User[]> {
+    async getTeamMembers(teamId: string): Promise<any[]> {
         const safeId = getSafeEncodedId(teamId);
-        return fetchHalCollection<User>(
-            `/teamMembers?team=/teams/${safeId}`,
+
+        const members = await fetchHalCollection<any>(
+            `/teamMembers?page=0&size=50`,
             this.authStrategy,
-            'teamMembers'
+            "teamMembers"
+        );
+
+        return members.filter(m =>
+            m.team?._links?.self?.href === `/teams/${safeId}`
         );
     }
 
-    async addTeamMember(teamId: string, data: AddMemberPayload): Promise<User> {
-        return createHalResource<User>(
-            `/teamMembers`,
+    async addTeamMember(teamId: string, data: AddMemberPayload): Promise<any> {
+        const safeId = getSafeEncodedId(teamId);
+
+        return createHalResource<any>(
+            "/teamMembers",
             {
-                ...data,
-                team: `/teams/${getSafeEncodedId(teamId)}`
+                name: data.name.trim(),
+                role: data.role,
+                birthDate: "2010-01-01",
+                gender: "MALE",
+                tShirtSize: "M",
+                team: `/teams/${safeId}`
             },
             this.authStrategy,
-            'team member'
+            "team member"
         );
     }
 
