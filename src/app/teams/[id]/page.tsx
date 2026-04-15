@@ -1,10 +1,13 @@
 import { TeamsService } from "@/api/teamApi";
+import { UsersService } from "@/api/userApi";
 import ErrorAlert from "@/app/components/error-alert";
 import EmptyState from "@/app/components/empty-state";
 import { serverAuthProvider } from "@/lib/authProvider";
+import { isAdmin } from "@/lib/authz";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
 import { parseErrorMessage, NotFoundError } from "@/types/errors";
+import TeamDeleteSection from "./team-delete-section";
 
 interface TeamDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -35,8 +38,15 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     let team: Team | null = null;
     let coaches: User[] = [];
     let members: User[] = [];
+    let currentUser: User | null = null;
     let error: string | null = null;
     let membersError: string | null = null;
+
+    try {
+        currentUser = await new UsersService(serverAuthProvider).getCurrentUser();
+    } catch (e) {
+        console.error("Failed to fetch current user:", e);
+    }
 
     try {
         team = await service.getTeamById(id);
@@ -70,12 +80,22 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                     <h1 className="mb-2 text-2xl font-semibold">{getTeamTitle(team, id)}</h1>
                     
                     {!error && team && (
-                         <div className="mb-6 space-y-1 text-sm text-zinc-600">
-                             {team.city && <p><strong>City:</strong> {team.city}</p>}
-                             {team.category && <p><strong>Category:</strong> {team.category}</p>}
-                             {team.educationalCenter && <p><strong>Educational Center:</strong> {team.educationalCenter}</p>}
-                             <p><strong>Coach:</strong> {coachName}</p>
-                         </div>
+                        <>
+                            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                                <div className="space-y-1 text-sm text-zinc-600">
+                                    {team.city && <p><strong>City:</strong> {team.city}</p>}
+                                    {team.category && <p><strong>Category:</strong> {team.category}</p>}
+                                    {team.educationalCenter && <p><strong>Educational Center:</strong> {team.educationalCenter}</p>}
+                                    <p><strong>Coach:</strong> {coachName}</p>
+                                </div>
+                                {isAdmin(currentUser) && (
+                                    <TeamDeleteSection
+                                        teamId={id}
+                                        teamName={getTeamTitle(team, id)}
+                                    />
+                                )}
+                            </div>
+                        </>
                     )}
 
                     {error && (

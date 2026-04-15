@@ -1,7 +1,7 @@
 import type { AuthStrategy } from "@/lib/authProvider";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
-import { fetchHalCollection, fetchHalResource } from "./halClient";
+import { deleteHal, fetchHalCollection, fetchHalResource } from "./halClient";
 
 function getSafeEncodedId(id: string): string {
     try {
@@ -31,5 +31,10 @@ export class TeamsService {
     async getTeamMembers(id: string): Promise<User[]> {
         const teamId = getSafeEncodedId(id);
         return fetchHalCollection<User>(`/teams/${teamId}/members`, this.authStrategy, 'teamMembers');
+    }
+
+    async deleteTeam(id: string): Promise<void> {
+        const teamId = getSafeEncodedId(id);
+        await deleteHal(`/teams/${teamId}`, this.authStrategy);
     }
 }
