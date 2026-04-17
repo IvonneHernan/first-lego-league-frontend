@@ -16,6 +16,8 @@ export class ScientificProjectsService {
         const resource = await getHal(`/scientificProjects/search/findByEditionId?editionId=${encodedId}`, this.authStrategy);
         const embedded = resource.embeddedArray('scientificProjects') || [];
         return mergeHalArray<ScientificProject>(embedded);
+    }
+
     async getScientificProjectById(id: string): Promise<ScientificProject> {
         const projectId = encodeURIComponent(id);
         return fetchHalResource<ScientificProject>(`/scientificProjects/${projectId}`, this.authStrategy);
