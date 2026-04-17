@@ -1,7 +1,6 @@
 import { AuthProvider } from "@/app/components/authentication";
 import Navbar from "@/app/components/navbar";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 
