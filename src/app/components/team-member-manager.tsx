@@ -48,10 +48,10 @@ export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }:
 
             <ul className="space-y-2">
                 {castedMembers.map((m) => (
-                    <li key={m.uri || m.id} className="flex items-center justify-between border p-3 rounded-lg bg-white">
+                    <li key={m.uri || m.id} className="flex items-center justify-between border border-border p-3 rounded-lg bg-card">
                         <div>
                             <span className="font-medium block">{m.name}</span>
-                            <span className="text-xs text-zinc-500 uppercase">{m.role}</span>
+                            <span className="text-xs text-muted-foreground uppercase">{m.role}</span>
                         </div>
                         {isAuthorized && (
                             <Button variant="destructive" size="sm" onClick={() => setSelected(m)}>
@@ -67,7 +67,7 @@ export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }:
                     member={selected}
                     onCancel={() => setSelected(null)}
                     onSuccess={(uri: string) => {
-                        removeMember(uri); 
+                        removeMember(uri);
                         setSelected(null);
                     }}
                 />

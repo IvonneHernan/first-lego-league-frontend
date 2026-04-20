@@ -14,7 +14,7 @@ export function TeamCard({ team, label }: Readonly<{ team: Team; label: string }
                 {team.category && <span className="status-badge inline-block">{team.category}</span>}
             </div>
             {teamId && (
-                <p className="mt-1 text-xs font-medium text-accent-foreground underline-offset-2 hover:underline">
+                <p className="mt-1 text-xs font-medium text-primary underline-offset-2 hover:underline">
                     View team details →
                 </p>
             )}

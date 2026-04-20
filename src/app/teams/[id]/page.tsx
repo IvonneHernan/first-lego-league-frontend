@@ -45,10 +45,10 @@ function extractTeamMembers(data: unknown): User[] {
         return !!obj && typeof obj === 'object' && '_embedded' in obj;
     };
 
-    const rawMembers: RawMember[] = Array.isArray(data) 
-        ? data as RawMember[] 
-        : isHalResponse(data) 
-            ? data._embedded?.teamMembers ?? [] 
+    const rawMembers: RawMember[] = Array.isArray(data)
+        ? data as RawMember[]
+        : isHalResponse(data)
+            ? data._embedded?.teamMembers ?? []
             : [];
 
     return rawMembers.map((m, index) => {
@@ -132,12 +132,12 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
         : "No coach assigned";
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="w-full max-w-3xl px-4 py-10">
                 <div className="w-full rounded-lg border bg-white p-6 shadow-sm dark:bg-black">
                     <h1 className="mb-2 text-2xl font-semibold">{teamDisplayName ?? "Unnamed team"}</h1>
 
-                    <div className="mb-6 space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                    <div className="mb-6 space-y-1 text-sm text-muted-foreground">
                         {team.city && <p><strong>City:</strong> {team.city}</p>}
                         <p><strong>Coach:</strong> {coachName}</p>
                     </div>

@@ -4,10 +4,28 @@ import { useAuth } from "@/app/components/authentication";
 import Loginbar from "@/app/components/loginbar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
     const pathname = usePathname();
     const { user } = useAuth();
+    const [isDark, setIsDark] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('theme') === 'dark';
+    });
+
+    function toggleTheme() {
+        const html = document.documentElement
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark')
+            localStorage.setItem('theme', 'light')
+            setIsDark(false)
+        } else {
+            html.classList.add('dark')
+            localStorage.setItem('theme', 'dark')
+            setIsDark(true)
+        }
+    }
 
     const navLinks = [
         { href: "/", label: "Home" },
@@ -59,8 +77,18 @@ export default function Navbar() {
                         })}
                 </div>
 
-                <div className="order-2 flex items-end gap-3 lg:order-3">
+                <div className="order-2 flex items-center gap-3 lg:order-3">
                     <Loginbar />
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        aria-label="Toggle dark mode"
+                        className="rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-foreground cursor-pointer"
+                    >
+                        <span className="dark:hidden">🌙</span>
+                        <span className="hidden dark:inline">☀️</span>
+                    </button>
+
                 </div>
             </div>
         </nav>
