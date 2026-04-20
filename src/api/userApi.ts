@@ -40,6 +40,16 @@ export class UsersService {
         return createHalResource<User>('/users', payload, this.authStrategy, 'user');
     }
 
+    async createAdministrator(user: CreateUserPayload): Promise<User> {
+        const payload = {
+            id: user.username,
+            email: user.email,
+            password: user.password,
+        };
+
+        return createHalResource<User>('/administrators', payload, this.authStrategy, 'administrator');
+    }
+
     async patchUser(id: string, data: Partial<Pick<User, 'email' | 'password'>>): Promise<User> {
         const userId = encodeURIComponent(id);
         const resource = await patchHal(`/users/${userId}`, data as Resource, this.authStrategy);

@@ -3,6 +3,7 @@ import PageShell from "@/app/components/page-shell";
 import ErrorAlert from "@/app/components/error-alert";
 import EmptyState from "@/app/components/empty-state";
 import AdministratorList from "./administrator-list";
+import CreateAdministrator from "./create-administrator";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { User } from "@/types/user";
 import { parseErrorMessage } from "@/types/errors";
@@ -65,6 +66,8 @@ export default async function AdministratorsPage() {
                         Select an administrator to view profile details.
                     </p>
                 </div>
+
+                {!error && currentUser && <CreateAdministrator />}
 
                 {error && <ErrorAlert message={error} />}
 

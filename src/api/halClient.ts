@@ -5,6 +5,7 @@ import {
     NotFoundError,
     ServerError,
     ValidationError,
+    ConflictError,
 } from "@/types/errors";
 import halfred, { Resource } from "halfred";
 
@@ -177,6 +178,8 @@ async function handleApiError(error: unknown, res?: Response): Promise<never> {
                 throw new AuthenticationError(errorMessage, status, error);
             case 400:
                 throw new ValidationError(errorMessage, error);
+            case 409:
+                throw new ConflictError(errorMessage, error);
             case 500:
             case 502:
             case 503:
