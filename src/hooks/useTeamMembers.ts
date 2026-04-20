@@ -22,7 +22,7 @@ export function useTeamMembers(teamId: string, initialMembers: User[] = []) {
     );
 
     const addMember = useCallback(
-        async (name: string, role: string) => {
+        async (name: string, role: string, birthDate?: string, gender?: string, tShirtSize?: string) => {
             if (!teamId) {
                 setError('Missing teamId');
                 return false;
@@ -37,6 +37,9 @@ export function useTeamMembers(teamId: string, initialMembers: User[] = []) {
                 const newMember = await service.addTeamMember(teamId, {
                     name,
                     role,
+                    birthDate,
+                    gender,
+                    tShirtSize
                 });
                 setMembers(prev => [...prev, newMember as unknown as User]);
                 return true;

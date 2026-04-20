@@ -37,8 +37,8 @@ export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }:
 
             {showForm && (
                 <AddMemberForm
-                    onSubmit={async (name, role) => {
-                        const success = await addMember(name, role);
+                    onSubmit={async (name, role, birthDate, gender, tShirtSize) => {
+                        const success = await addMember(name, role, birthDate, gender, tShirtSize);
                         if (success) setShowForm(false);
                         return success;
                     }}

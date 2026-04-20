@@ -19,6 +19,9 @@ function getSafeEncodedId(id: string): string {
 export interface AddMemberPayload {
     name: string;
     role: string;
+    birthDate?: string;
+    gender?: string;
+    tShirtSize?: string;
 }
 
 export class TeamsService {
@@ -58,9 +61,9 @@ export class TeamsService {
             {
                 name: data.name.trim(),
                 role: data.role,
-                birthDate: "2010-01-01",
-                gender: "MALE",
-                tShirtSize: "M",
+                birthDate: data.birthDate || "2010-01-01",
+                gender: data.gender || "MALE",
+                tShirtSize: data.tShirtSize || "M",
                 team: `/teams/${safeId}`
             },
             this.authStrategy,
