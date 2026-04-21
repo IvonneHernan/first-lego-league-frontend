@@ -1,10 +1,11 @@
 import type { AuthStrategy } from "@/lib/authProvider";
 import { CompetitionTable } from "@/types/competitionTable";
 import { Match } from "@/types/match";
+import type { HalPage } from "@/types/pagination";
 import { Referee } from "@/types/referee";
 import { Round } from "@/types/round";
 import { Team } from "@/types/team";
-import { createHalResource, deleteHal, fetchHalCollection, fetchHalResource } from "./halClient";
+import { createHalResource, deleteHal, fetchHalCollection, fetchHalPagedCollection, fetchHalResource } from "./halClient";
 
 export type CreateMatchPayload = {
     startTime: string;
@@ -24,6 +25,16 @@ export class MatchesService {
             "/matches?sort=startTime,asc&sort=id,asc&size=1000",
             this.authStrategy,
             "matches"
+        );
+    }
+
+    async getMatchesPaged(page: number, size: number): Promise<HalPage<Match>> {
+        return fetchHalPagedCollection<Match>(
+            "/matches?sort=startTime,asc&sort=id,asc",
+            this.authStrategy,
+            "matches",
+            page,
+            size
         );
     }
 

@@ -1,8 +1,10 @@
 import type { AuthStrategy } from "@/lib/authProvider";
 import { Team } from "@/types/team";
+import type { HalPage } from "@/types/pagination";
 import { User } from "@/types/user";
 import {
     fetchHalCollection,
+    fetchHalPagedCollection,
     fetchHalResource,
     createHalResource,
     deleteHal
@@ -30,6 +32,10 @@ export class TeamsService {
 
     async getTeamsByEdition(editionUri: string): Promise<Team[]> {
         return fetchHalCollection<Team>(editionUri, this.authStrategy, 'teams');
+    }
+
+    async getTeamsPaged(page: number, size: number): Promise<HalPage<Team>> {
+        return fetchHalPagedCollection<Team>('/teams', this.authStrategy, 'teams', page, size);
     }
 
     async getTeamById(id: string): Promise<Team> {
@@ -67,8 +73,6 @@ export class TeamsService {
             "teamMembers"
         );
     }
-
-
 
     async deleteTeam(id: string): Promise<void> {
         const teamId = getSafeEncodedId(id);
