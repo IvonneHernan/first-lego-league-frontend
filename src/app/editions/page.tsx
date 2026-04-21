@@ -1,18 +1,22 @@
 import { EditionsService } from "@/api/editionApi";
+import { UsersService } from "@/api/userApi";
 import PageShell from "@/app/components/page-shell";
 import ErrorAlert from "@/app/components/error-alert";
 import EmptyState from "@/app/components/empty-state";
+import PaginationControls from "@/app/components/pagination-controls";
+import { buttonVariants } from "@/app/components/button";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { Edition } from "@/types/edition";
 import { parseErrorMessage } from "@/types/errors";
+import type { HalPage } from "@/types/pagination";
 import { User } from "@/types/user";
 import Link from "next/link";
-import { UsersService } from "@/api/userApi";
-import { buttonVariants } from "@/app/components/button";
 
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZE = 5;
 
 function getEditionHref(edition: Edition) {
     const editionId = getEncodedResourceId(edition.uri);
@@ -57,7 +61,13 @@ function EditionCard({ edition }: Readonly<{ edition: Edition }>) {
 type EditionsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function EditionsPage({ searchParams }: Readonly<{ searchParams: EditionsPageSearchParams }>) {
+    const params = await searchParams;
+    const rawYear = params.year;
+    const year = Array.isArray(rawYear) ? rawYear[0] : rawYear;
+    const urlPage = Math.max(1, Number(params.page ?? "1") || 1);
+
     let editions: Edition[] = [];
+    let result: HalPage<Edition> = { items: [], hasNext: false, hasPrev: false, currentPage: 0 };
     let error: string | null = null;
     let currentUser: User | null = null;
 
@@ -68,16 +78,14 @@ export default async function EditionsPage({ searchParams }: Readonly<{ searchPa
     }
 
     try {
-        const params = await searchParams;
-        const rawYear = params.year;
-        const year = Array.isArray(rawYear) ? rawYear[0] : rawYear;
         const service = new EditionsService(serverAuthProvider);
 
         if (year?.trim()) {
             const edition = await service.getEditionByYear(year.trim());
             editions = edition ? [edition] : [];
         } else {
-            editions = await service.getEditions();
+            result = await service.getEditionsPaged(urlPage - 1, PAGE_SIZE);
+            editions = result.items;
         }
     } catch (e) {
         console.error("Failed to fetch editions:", e);
@@ -114,13 +122,23 @@ export default async function EditionsPage({ searchParams }: Readonly<{ searchPa
                 )}
 
                 {!error && editions.length > 0 && (
-                    <ul className="list-grid">
-                        {editions.map((edition, index) => (
-                            <li key={edition.uri ?? index}>
-                                <EditionCard edition={edition} />
-                            </li>
-                        ))}
-                    </ul>
+                    <>
+                        <ul className="list-grid">
+                            {editions.map((edition, index) => (
+                                <li key={edition.uri ?? index}>
+                                    <EditionCard edition={edition} />
+                                </li>
+                            ))}
+                        </ul>
+                        {!year && (
+                            <PaginationControls
+                                currentPage={urlPage}
+                                hasNext={result.hasNext}
+                                hasPrev={result.hasPrev}
+                                basePath="/editions"
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </PageShell>

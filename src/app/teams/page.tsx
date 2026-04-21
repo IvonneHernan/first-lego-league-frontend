@@ -5,15 +5,19 @@ import { buttonVariants } from "@/app/components/button";
 import EmptyState from "@/app/components/empty-state";
 import ErrorAlert from "@/app/components/error-alert";
 import PageShell from "@/app/components/page-shell";
+import PaginationControls from "@/app/components/pagination-controls";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { ApiError, AuthenticationError, parseErrorMessage } from "@/types/errors";
+import type { HalPage } from "@/types/pagination";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+
+const PAGE_SIZE = 5;
 
 function getTeamDisplayName(team: Team) {
     return team.name ?? team.id ?? "Unnamed team";
@@ -68,9 +72,15 @@ function TeamCard({ team }: Readonly<{ team: Team }>) {
 type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function TeamsPage({ searchParams }: Readonly<{ searchParams: PageSearchParams }>) {
+    const params = await searchParams;
+    const yearParam = params.year;
+    const year = Array.isArray(yearParam) ? yearParam[0] : yearParam;
+    const yearQuery = year ? `?year=${year}` : "";
+    const urlPage = Math.max(1, Number(params.page ?? "1") || 1);
+
     let teams: Team[] = [];
+    let result: HalPage<Team> = { items: [], hasNext: false, hasPrev: false, currentPage: 0 };
     let error: string | null = null;
-    let yearQuery = "";
     let currentUser: User | null = null;
 
     try {
@@ -85,21 +95,17 @@ export default async function TeamsPage({ searchParams }: Readonly<{ searchParam
     }
 
     try {
-        const params = await searchParams;
-        const yearParam = params.year;
-        const year = Array.isArray(yearParam) ? yearParam[0] : yearParam;
-        yearQuery = year ? `?year=${year}` : "";
         const service = new TeamsService(serverAuthProvider);
 
         if (year) {
             const editionsService = new EditionsService(serverAuthProvider);
             const edition = await editionsService.getEditionByYear(year);
-
             if (edition?.uri) {
                 teams = await service.getTeamsByEdition(edition.uri + "/teams");
             }
         } else {
-            teams = await service.getTeams();
+            result = await service.getTeamsPaged(urlPage - 1, PAGE_SIZE);
+            teams = result.items;
         }
     } catch (e) {
         console.error("Failed to fetch teams:", e);
@@ -136,23 +142,33 @@ export default async function TeamsPage({ searchParams }: Readonly<{ searchParam
                 )}
 
                 {!error && teams.length > 0 && (
-                    <ul className="list-grid">
-                        {teams.map((team, index) => {
-                            const teamId = getEncodedResourceId(team.uri);
-                            const href = teamId ? `/teams/${teamId}${yearQuery}` : null;
-                            return (
-                                <li key={getTeamKey(team, index)}>
-                                    {href ? (
-                                        <Link href={href} className="block h-full transition hover:bg-zinc-50 dark:hover:bg-zinc-900 group">
+                    <>
+                        <ul className="list-grid">
+                            {teams.map((team, index) => {
+                                const teamId = getEncodedResourceId(team.uri);
+                                const href = teamId ? `/teams/${teamId}${yearQuery}` : null;
+                                return (
+                                    <li key={getTeamKey(team, index)}>
+                                        {href ? (
+                                            <Link href={href} className="block h-full transition hover:bg-zinc-50 dark:hover:bg-zinc-900 group">
+                                                <TeamCard team={team} />
+                                            </Link>
+                                        ) : (
                                             <TeamCard team={team} />
-                                        </Link>
-                                    ) : (
-                                        <TeamCard team={team} />
-                                    )}
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                        )}
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        {!year && (
+                            <PaginationControls
+                                currentPage={urlPage}
+                                hasNext={result.hasNext}
+                                hasPrev={result.hasPrev}
+                                basePath="/teams"
+                            />
+                        )}
+                    </>
                 )}
             </div>
         </PageShell>

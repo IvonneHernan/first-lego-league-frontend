@@ -1,4 +1,5 @@
 import type { AuthStrategy } from "@/lib/authProvider";
+import type { HalPage } from "@/types/pagination";
 import {
     ApiError,
     AuthenticationError,
@@ -20,6 +21,7 @@ import {
 import {
     API_BASE_URL,
     fetchHalCollection,
+    fetchHalPagedCollection,
     fetchHalResource,
     createHalResource,
     deleteHal,
@@ -49,6 +51,10 @@ export class TeamsService {
 
     async getTeamsByEdition(editionUri: string): Promise<Team[]> {
         return fetchHalCollection<Team>(editionUri, this.authStrategy, 'teams');
+    }
+
+    async getTeamsPaged(page: number, size: number): Promise<HalPage<Team>> {
+        return fetchHalPagedCollection<Team>('/teams', this.authStrategy, 'teams', page, size);
     }
 
     async getTeamById(id: string): Promise<Team> {
@@ -213,7 +219,6 @@ export class TeamsService {
                 );
         }
     }
-
     async deleteTeam(id: string): Promise<void> {
         const teamId = getSafeEncodedId(id);
         await deleteHal(`/teams/${teamId}`, this.authStrategy);
