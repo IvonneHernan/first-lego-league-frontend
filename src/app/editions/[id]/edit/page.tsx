@@ -7,6 +7,8 @@ import { isAdmin } from "@/lib/authz";
 import { AuthenticationError, parseErrorMessage, NotFoundError } from "@/types/errors";
 import { redirect } from "next/navigation";
 import EditForm from "./form";
+import { Edition } from "@/types/edition";
+import { User } from "@/types/user";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +19,8 @@ interface EditEditionPageProps {
 export default async function EditEditionPage(props: Readonly<EditEditionPageProps>) {
     const { id } = await props.params;
 
-    let currentUser = null;
-    let edition = null;
+    let currentUser: User | null = null;
+    let edition: Edition | null = null;
     let error: string | null = null;
 
     try {

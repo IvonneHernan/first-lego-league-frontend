@@ -3,7 +3,7 @@ import { Edition } from "@/types/edition";
 import type { HalPage } from "@/types/pagination";
 import { Team } from "@/types/team";
 
-import { createHalResource, fetchHalCollection, fetchHalPagedCollection, fetchHalResource } from "./halClient";
+import { createHalResource, fetchHalCollection, fetchHalPagedCollection, fetchHalResource, updateHalResource } from "./halClient";
 
 export type CreateEditionPayload = {
     year: number;
@@ -15,7 +15,6 @@ export type UpdateEditionPayload = {
     year?: number;
     venueName?: string;
     description?: string;
-    state?: string;
 };
 
 export class EditionsService {
