@@ -28,6 +28,10 @@ export default function TeamEditSection({ team }: TeamEditSectionProps) {
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+    // Helper para convertir FormDataEntryValue → string | null
+    const getString = (value: FormDataEntryValue | null) =>
+        value ? String(value) : null;
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
 
@@ -42,13 +46,13 @@ export default function TeamEditSection({ team }: TeamEditSectionProps) {
             const payload = {
                 id: team.id,
                 name: String(formData.get('name') || ''),
-                city: formData.get('city') || null,
-                educationalCenter: formData.get('educationalCenter') || null,
+                city: getString(formData.get('city')),
+                educationalCenter: getString(formData.get('educationalCenter')),
                 category: String(formData.get('category') || ''),
                 foundationYear: formData.get('foundationYear')
                     ? Number(formData.get('foundationYear'))
                     : null,
-                inscriptionDate: formData.get('inscriptionDate') || null,
+                inscriptionDate: getString(formData.get('inscriptionDate')),
             };
 
             const result = await updateTeam(payload);
