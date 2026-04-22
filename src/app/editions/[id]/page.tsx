@@ -7,6 +7,7 @@ import { Edition } from "@/types/edition";
 import { Team } from "@/types/team";
 import { parseErrorMessage, NotFoundError } from "@/types/errors";
 import Link from "next/link";
+import { getTeamDisplayName } from "@/lib/teamUtils";
 
 interface EditionDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -94,11 +95,11 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                                             >
                                                 {href ? (
                                                     <Link href={href} className="font-medium text-foreground">
-                                                        {team.name ?? team.id ?? `Team ${index + 1}`}
+                                                        {getTeamDisplayName(team)}
                                                     </Link>
                                                 ) : (
                                                     <span className="font-medium text-foreground">
-                                                        {team.name ?? team.id ?? `Team ${index + 1}`}
+                                                        {getTeamDisplayName(team)}
                                                     </span>
                                                 )}
                                             </li>
