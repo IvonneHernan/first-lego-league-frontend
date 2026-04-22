@@ -103,6 +103,10 @@ export default async function MatchDetailPage(props: Readonly<MatchDetailPagePro
     let formTeamA: Team | null = null;
     let formTeamB: Team | null = null;
     let matchResults: MatchResult[] = [];
+    let teamAId = "";
+    let teamBId = "";
+    let teamADisplayName = "Team A";
+    let teamBDisplayName = "Team B";
 
     try {
         const currentUser = await new UsersService(serverAuthProvider).getCurrentUser();
@@ -129,15 +133,27 @@ export default async function MatchDetailPage(props: Readonly<MatchDetailPagePro
                 console.error("Failed to fetch match teams:", e);
                 teamsError = `Could not load team information. ${parseErrorMessage(e)}`;
             }),
-            service.getMatchTeamA(id).then((t) => { formTeamA = t; }).catch(() => null),
-            service.getMatchTeamB(id).then((t) => { formTeamB = t; }).catch(() => null),
+            service.getMatchTeamA(id).then((t) => {
+                formTeamA = t;
+                const raw = t as unknown as { name?: string; id?: string; uri?: string };
+                teamADisplayName = raw.name ?? raw.id ?? "Team A";
+                const href = t.link("self")?.href ?? raw.uri ?? "";
+                teamAId = decodeURIComponent(href.split("/").pop() ?? "");
+            }).catch(() => null),
+            service.getMatchTeamB(id).then((t) => {
+                formTeamB = t;
+                const raw = t as unknown as { name?: string; id?: string; uri?: string };
+                teamBDisplayName = raw.name ?? raw.id ?? "Team B";
+                const href = t.link("self")?.href ?? raw.uri ?? "";
+                teamBId = decodeURIComponent(href.split("/").pop() ?? "");
+            }).catch(() => null),
             service.getMatchResults(matchUri).then((r) => { matchResults = r; }).catch(() => null),
         ]);
     }
 
     const teamA = teams.find((t) => t.name === match?.teamA) ?? teams[0] ?? null;
     const teamB = teams.find((t) => t.name === match?.teamB) ?? teams[1] ?? null;
-    const numericMatchId = parseInt(decodeURIComponent(id), 10);
+    const numericMatchId = Number.parseInt(decodeURIComponent(id), 10) || null;
 
     const displayState = matchResults.length > 0 ? "COMPLETED" : match?.state;
 
@@ -186,12 +202,12 @@ export default async function MatchDetailPage(props: Readonly<MatchDetailPagePro
 
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             {(teamA ?? formTeamA) ? (
-                                <TeamCard team={(teamA ?? formTeamA)!} label="Team A" yearQuery={yearQuery} />
+                                <TeamCard team={(teamA ?? formTeamA) as Team} label="Team A" yearQuery={yearQuery} />
                             ) : (
                                 <UnknownTeamCard label="Team A" name={match.teamA} />
                             )}
                             {(teamB ?? formTeamB) ? (
-                                <TeamCard team={(teamB ?? formTeamB)!} label="Team B" yearQuery={yearQuery} />
+                                <TeamCard team={(teamB ?? formTeamB) as Team} label="Team B" yearQuery={yearQuery} />
                             ) : (
                                 <UnknownTeamCard label="Team B" name={match.teamB} />
                             )}
@@ -225,7 +241,7 @@ export default async function MatchDetailPage(props: Readonly<MatchDetailPagePro
                     )}
 
                     {/* Referee actions */}
-                    {isAuthorized && formTeamA && formTeamB && (
+                    {isAuthorized && formTeamA && formTeamB && numericMatchId && (
                         <section aria-labelledby="record-result-heading">
                             <div className="mb-4 space-y-1">
                                 <div className="page-eyebrow">Referee actions</div>
@@ -243,11 +259,11 @@ export default async function MatchDetailPage(props: Readonly<MatchDetailPagePro
                                 </button>
                             ) : (
                                 <RecordResultForm
-                                    matchId={numericMatchId}
-                                    teamAId={decodeURIComponent((formTeamA.link("self")?.href ?? formTeamA.uri ?? "").split("/").pop() ?? "")}
-                                    teamBId={decodeURIComponent((formTeamB.link("self")?.href ?? formTeamB.uri ?? "").split("/").pop() ?? "")}
-                                    teamAName={formTeamA.name ?? formTeamA.id ?? "Team A"}
-                                    teamBName={formTeamB.name ?? formTeamB.id ?? "Team B"}
+                                    matchId={numericMatchId!}
+                                    teamAId={teamAId}
+                                    teamBId={teamBId}
+                                    teamAName={teamADisplayName}
+                                    teamBName={teamBDisplayName}
                                 />
                             )}
                         </section>
