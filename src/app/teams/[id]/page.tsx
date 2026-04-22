@@ -29,10 +29,7 @@ function toTeamMemberSnapshot(member: TeamMember): TeamMemberSnapshot {
 }
 
 function getTeamDisplayName(team: Team | null): string | null {
-    if (!team) {
-        return null;
-    }
-
+    if (!team) return null;
     return team.name ?? team.id ?? null;
 }
 
@@ -62,20 +59,14 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
         error = parseErrorMessage(e);
     }
 
-<<<<<<< main
     if (team && !error) {
-        try {
-            const [coachesData, membersData] = await Promise.all([
+        const teamDisplayName = getTeamDisplayName(team);
+
+        const [membersResult, scientificProjectsResult] = await Promise.allSettled([
+            Promise.all([
                 service.getTeamCoach(id),
                 service.getTeamMembers(id),
-            ]);
-=======
-    const teamDisplayName = getTeamDisplayName(team);
->>>>>>> main
-
-    if (team && !error) {
-        const [membersResult, scientificProjectsResult] = await Promise.allSettled([
-            Promise.all([service.getTeamCoach(id), service.getTeamMembers(id)]),
+            ]),
             teamDisplayName
                 ? scientificProjectsService.getScientificProjectsByTeamName(teamDisplayName)
                 : Promise.resolve([] as ScientificProject[])
@@ -86,14 +77,12 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
             coaches = coachesData ?? [];
             members = membersData ?? [];
         } else {
-            console.error("Error loading members:", membersResult.reason);
             membersError = parseErrorMessage(membersResult.reason);
         }
 
         if (scientificProjectsResult.status === "fulfilled") {
             scientificProjects = scientificProjectsResult.value;
         } else {
-            console.error("Error loading scientific projects:", scientificProjectsResult.reason);
             scientificProjectsError = parseErrorMessage(scientificProjectsResult.reason);
         }
     }
@@ -122,36 +111,25 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     const initialMembers = members.map(toTeamMemberSnapshot);
 
     const membersKey = initialMembers
-        .map((member) => member.uri ?? String(member.id ?? member.name ?? ""))
+        .map((m) => m.uri ?? String(m.id ?? m.name ?? ""))
         .join("|");
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="w-full max-w-3xl px-4 py-10">
-<<<<<<< main
+
                 <div className="w-full rounded-lg border border-border bg-card p-6 shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                        <h1 className="mb-2 text-2xl font-semibold text-foreground">
-                            {team.name}
-                        </h1>
-                    </div>
-=======
-                <div className="w-full rounded-lg border bg-white p-6 shadow-sm dark:bg-black">
-                    <h1 className="mb-2 text-2xl font-semibold">{teamDisplayName ?? "Unnamed team"}</h1>
->>>>>>> main
+                    <h1 className="mb-2 text-2xl font-semibold text-foreground">
+                        {team.name}
+                    </h1>
 
                     <div className="mb-6 space-y-1 text-sm text-muted-foreground">
                         {team.city && (
-                            <p>
-                                <strong>City:</strong> {team.city}
-                            </p>
+                            <p><strong>City:</strong> {team.city}</p>
                         )}
-                        <p>
-                            <strong>Coach:</strong> {coachName}
-                        </p>
+                        <p><strong>Coach:</strong> {coachName}</p>
                     </div>
 
-<<<<<<< main
                     {isAdmin && (
                         <div className="mb-6 rounded-md border border-border p-4">
                             <TeamEditSection
@@ -168,12 +146,9 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                         </div>
                     )}
 
-                    <h2 className="mt-8 mb-4 text-xl font-semibold text-foreground">
+                    <h2 className="mt-8 mb-4 text-xl font-semibold">
                         Team Members
                     </h2>
-=======
-                    <h2 className="mt-8 mb-4 text-xl font-semibold">Team Members</h2>
->>>>>>> main
 
                     {!membersError && (
                         <TeamMembersManager
@@ -187,33 +162,35 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
 
                     {membersError && <ErrorAlert message={membersError} />}
 
-                    <section aria-labelledby="team-projects-heading">
-                        <h2 id="team-projects-heading" className="mt-8 mb-4 text-xl font-semibold">
-                            Scientific Projects
-                        </h2>
+                    <h2 className="mt-8 mb-4 text-xl font-semibold">
+                        Scientific Projects
+                    </h2>
 
-                        {scientificProjectsError && (
-                            <ErrorAlert message={`Could not load scientific projects. ${scientificProjectsError}`} />
-                        )}
+                    {scientificProjectsError && (
+                        <ErrorAlert message={scientificProjectsError} />
+                    )}
 
-                        {!scientificProjectsError && scientificProjects.length === 0 && (
-                            <EmptyState
-                                title="No scientific projects yet"
-                                description="This team has not submitted any scientific projects."
-                                className="py-8"
-                            />
-                        )}
+                    {!scientificProjectsError && scientificProjects.length === 0 && (
+                        <EmptyState
+                            title="No scientific projects yet"
+                            description="This team has not submitted any scientific projects."
+                            className="py-8"
+                        />
+                    )}
 
-                        {!scientificProjectsError && scientificProjects.length > 0 && (
-                            <ul className="space-y-3">
-                                {scientificProjects.map((project, index) => (
-                                    <li key={project.uri ?? project.link("self")?.href ?? index}>
-                                        <ScientificProjectCardLink project={project} index={index} variant="stacked" />
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                    {!scientificProjectsError && scientificProjects.length > 0 && (
+                        <ul className="space-y-3">
+                            {scientificProjects.map((project, index) => (
+                                <li key={project.uri ?? index}>
+                                    <ScientificProjectCardLink
+                                        project={project}
+                                        index={index}
+                                        variant="stacked"
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
         </div>
