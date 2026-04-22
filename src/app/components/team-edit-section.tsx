@@ -20,6 +20,12 @@ interface TeamEditSectionProps {
     };
 }
 
+// 🔧 helper seguro para FormData
+function getStringOrNull(formData: FormData, key: string): string | null {
+    const value = formData.get(key);
+    return typeof value === 'string' && value.trim() !== '' ? value : null;
+}
+
 export default function TeamEditSection({ team }: TeamEditSectionProps) {
     const router = useRouter();
 
@@ -39,16 +45,17 @@ export default function TeamEditSection({ team }: TeamEditSectionProps) {
         try {
             const formData = new FormData(e.currentTarget);
 
+            // ✅ payload tipado correctamente
             const payload = {
                 id: team.id,
                 name: String(formData.get('name') || ''),
-                city: formData.get('city') || null,
-                educationalCenter: formData.get('educationalCenter') || null,
+                city: getStringOrNull(formData, 'city'),
+                educationalCenter: getStringOrNull(formData, 'educationalCenter'),
                 category: String(formData.get('category') || ''),
                 foundationYear: formData.get('foundationYear')
                     ? Number(formData.get('foundationYear'))
                     : null,
-                inscriptionDate: formData.get('inscriptionDate') || null,
+                inscriptionDate: getStringOrNull(formData, 'inscriptionDate'),
             };
 
             const result = await updateTeam(payload);
