@@ -72,18 +72,28 @@ export default async function ScientificProjectDetailPage(props: Readonly<Scient
     if (projectRoomHref) {
         try {
             projectRoom = await fetchHalResource<ProjectRoom>(projectRoomHref, serverAuthProvider);
-
-            const judgeHref = projectRoom.link("managedByJudge")?.href;
-            if (judgeHref) {
-                managedByJudge = await fetchHalResource<Volunteer>(judgeHref, serverAuthProvider);
-            }
-
-            const panelistsHref = projectRoom.link("panelists")?.href;
-            if (panelistsHref) {
-                panelists = await fetchHalCollection<Volunteer>(panelistsHref, serverAuthProvider, "judges");
-            }
         } catch (e) {
             console.error("Failed to fetch project room:", e);
+        }
+    }
+
+    if (projectRoom) {
+        const judgeHref = projectRoom.link("managedByJudge")?.href;
+        if (judgeHref) {
+            try {
+                managedByJudge = await fetchHalResource<Volunteer>(judgeHref, serverAuthProvider);
+            } catch (e) {
+                console.error("Failed to fetch managing judge:", e);
+            }
+        }
+
+        const panelistsHref = projectRoom.link("panelists")?.href;
+        if (panelistsHref) {
+            try {
+                panelists = await fetchHalCollection<Volunteer>(panelistsHref, serverAuthProvider, "judges");
+            } catch (e) {
+                console.error("Failed to fetch panelists:", e);
+            }
         }
     }
 
