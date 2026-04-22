@@ -5,8 +5,8 @@ import ErrorAlert from "@/app/components/error-alert";
 import PageShell from "@/app/components/page-shell";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
-import { AuthenticationError, parseErrorMessage } from "@/types/errors";
 import { CompetitionTable } from "@/types/competitionTable";
+import { AuthenticationError, parseErrorMessage } from "@/types/errors";
 import { Referee } from "@/types/referee";
 import { Round } from "@/types/round";
 import { Team } from "@/types/team";
@@ -40,7 +40,7 @@ function getRoundOption(round: Round): Option | null {
     }
 
     const label =
-        round.number !== undefined ? `Round ${round.number}` : getUriLabel(resourceUri, "Round");
+        round.number === undefined ? getUriLabel(resourceUri, "Round") : `Round ${round.number}`;
     return { label, value: resourceUri };
 }
 

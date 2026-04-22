@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from "react";
+import { TeamsService } from "@/api/teamApi";
 import { Button } from "@/app/components/button";
 import ErrorAlert from "@/app/components/error-alert";
-import { TeamsService } from "@/api/teamApi";
 import { clientAuthProvider } from "@/lib/authProvider";
 import { parseErrorMessage } from "@/types/errors";
+import { useEffect, useId, useRef, useState } from "react";
 
 interface MemberToDelete {
     name: string;
@@ -18,7 +18,7 @@ interface DeleteMemberDialogProps {
     onCancel: () => void;
 }
 
-export function DeleteMemberDialog({ member, onSuccess, onCancel }: DeleteMemberDialogProps) {
+export function DeleteMemberDialog({ member, onSuccess, onCancel }: Readonly<DeleteMemberDialogProps>) {
     const dialogRef = useRef<HTMLDialogElement>(null);
     const titleId = useId();
     const [isDeleting, setIsDeleting] = useState(false);

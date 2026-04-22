@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/app/components/button';
-import { AddMemberForm } from './add-member-form';
-import { DeleteMemberDialog } from './delete-member-dialog';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { User } from '@/types/user';
+import { useState } from 'react';
+import { AddMemberForm } from './add-member-form';
+import { DeleteMemberDialog } from './delete-member-dialog';
 
 interface TeamMember {
     id: string;
@@ -21,7 +21,7 @@ interface TeamMembersManagerProps {
     isAdmin: boolean;
 }
 
-export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }: TeamMembersManagerProps) {
+export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }: Readonly<TeamMembersManagerProps>) {
     const isAuthorized = isCoach || isAdmin;
     const { members, addMember, removeMember, isFull, isLoading } = useTeamMembers(teamId, initialMembers);
     const [showForm, setShowForm] = useState(false);

@@ -1,23 +1,43 @@
+import { EditionsService } from "@/api/editionApi";
 import { ScientificProjectsService } from "@/api/scientificProjectApi";
-import PageShell from "@/app/components/page-shell";
-import ErrorAlert from "@/app/components/error-alert";
+import { buttonVariants } from "@/app/components/button";
 import EmptyState from "@/app/components/empty-state";
+import ErrorAlert from "@/app/components/error-alert";
+import PageShell from "@/app/components/page-shell";
 import { ScientificProjectCardLink } from "@/app/components/scientific-project-card";
 import { serverAuthProvider } from "@/lib/authProvider";
+import { getEncodedResourceId } from "@/lib/halRoute";
+import { parseErrorMessage } from "@/types/errors";
 import { ScientificProject } from "@/types/scientificProject";
 import Link from "next/link";
-import { buttonVariants } from "@/app/components/button";
-import { parseErrorMessage } from "@/types/errors";
 
-export default async function ScientificProjectsPage() {
+type PageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function ScientificProjectsPage({ searchParams }: Readonly<{ searchParams: PageSearchParams }>) {
     let projects: ScientificProject[] = [];
     let error: string | null = null;
+    let yearQuery = "";
     const auth = await serverAuthProvider.getAuth();
     const isLoggedIn = !!auth;
 
     try {
+        const params = await searchParams;
+        const yearParam = params.year;
+        const year = Array.isArray(yearParam) ? yearParam[0] : yearParam;
+        yearQuery = year ? `?year=${year}` : "";
         const service = new ScientificProjectsService(serverAuthProvider);
-        projects = await service.getScientificProjects();
+
+        if (year) {
+            const editionsService = new EditionsService(serverAuthProvider);
+            const edition = await editionsService.getEditionByYear(year);
+
+            const editionId = edition?.uri ? getEncodedResourceId(edition.uri) : null;
+            if (editionId) {
+                projects = await service.getScientificProjectsByEdition(editionId);
+            }
+        } else {
+            projects = await service.getScientificProjects();
+        }
     } catch (e) {
         console.error("Failed to fetch scientific projects:", e);
         error = parseErrorMessage(e);
@@ -29,7 +49,7 @@ export default async function ScientificProjectsPage() {
             title="Scientific Projects"
             description="Explore innovation projects linked to each FIRST LEGO League edition."
             heroAside={isLoggedIn ? (
-                <Link href="/scientific-projects/new" className={buttonVariants({ variant: "default", size: "sm" })}>
+                <Link href={`/scientific-projects/new${yearQuery}`} className={buttonVariants({ variant: "default", size: "sm" })}>
                     New Project
                 </Link>
             ) : undefined}

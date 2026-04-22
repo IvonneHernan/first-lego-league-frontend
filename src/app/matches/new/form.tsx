@@ -171,7 +171,7 @@ export default function NewMatchForm({
                 <select
                     id="round"
                     className={selectClassName}
-                    aria-invalid={errors.round ? "true" : "false"}
+                    aria-invalid={!!errors.round}
                     aria-describedby={errors.round ? "round-error" : undefined}
                     disabled={roundOptions.length === 0}
                     {...register("round", { required: "Round is required" })}
@@ -194,7 +194,7 @@ export default function NewMatchForm({
                 <select
                     id="competitionTable"
                     className={selectClassName}
-                    aria-invalid={errors.competitionTable ? "true" : "false"}
+                    aria-invalid={!!errors.competitionTable}
                     aria-describedby={errors.competitionTable ? "competition-table-error" : undefined}
                     disabled={competitionTableOptions.length === 0}
                     {...register("competitionTable", { required: "Competition table is required" })}
@@ -226,7 +226,7 @@ export default function NewMatchForm({
                     <select
                         id="teamA"
                         className={selectClassName}
-                        aria-invalid={errors.teamA ? "true" : "false"}
+                        aria-invalid={!!errors.teamA}
                         aria-describedby={errors.teamA ? "team-a-error" : undefined}
                         disabled={teamOptions.length < 2}
                         {...register("teamA", { required: "Team A is required" })}
@@ -248,7 +248,7 @@ export default function NewMatchForm({
                     <select
                         id="teamB"
                         className={selectClassName}
-                        aria-invalid={errors.teamB ? "true" : "false"}
+                        aria-invalid={!!errors.teamB}
                         aria-describedby={errors.teamB ? "team-b-error" : undefined}
                         disabled={teamOptions.length < 2}
                         {...register("teamB", {
@@ -275,7 +275,7 @@ export default function NewMatchForm({
                 <select
                     id="referee"
                     className={selectClassName}
-                    aria-invalid={errors.referee ? "true" : "false"}
+                    aria-invalid={!!errors.referee}
                     aria-describedby={errors.referee ? "referee-error" : undefined}
                     disabled={refereeOptions.length === 0}
                     {...register("referee", { required: "Referee is required" })}
