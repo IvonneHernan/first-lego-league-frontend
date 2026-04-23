@@ -79,21 +79,23 @@ export default async function ScientificProjectDetailPage(props: Readonly<Scient
 
     if (projectRoom) {
         const judgeHref = projectRoom.link("managedByJudge")?.href;
-        if (judgeHref) {
-            try {
-                managedByJudge = await fetchHalResource<Volunteer>(judgeHref, serverAuthProvider);
-            } catch (e) {
-                console.error("Failed to fetch managing judge:", e);
-            }
+        const panelistsHref = projectRoom.link("panelists")?.href;
+
+        const [judgeResult, panelistsResult] = await Promise.allSettled([
+            judgeHref ? fetchHalResource<Volunteer>(judgeHref, serverAuthProvider) : Promise.resolve(null),
+            panelistsHref ? fetchHalCollection<Volunteer>(panelistsHref, serverAuthProvider, "judges") : Promise.resolve([]),
+        ]);
+
+        if (judgeResult.status === "fulfilled") {
+            managedByJudge = judgeResult.value;
+        } else {
+            console.error("Failed to fetch managing judge:", judgeResult.reason);
         }
 
-        const panelistsHref = projectRoom.link("panelists")?.href;
-        if (panelistsHref) {
-            try {
-                panelists = await fetchHalCollection<Volunteer>(panelistsHref, serverAuthProvider, "judges");
-            } catch (e) {
-                console.error("Failed to fetch panelists:", e);
-            }
+        if (panelistsResult.status === "fulfilled") {
+            panelists = panelistsResult.value;
+        } else {
+            console.error("Failed to fetch panelists:", panelistsResult.reason);
         }
     }
 
