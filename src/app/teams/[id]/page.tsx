@@ -5,6 +5,7 @@ import EmptyState from "@/app/components/empty-state";
 import ErrorAlert from "@/app/components/error-alert";
 import { ScientificProjectCardLink } from "@/app/components/scientific-project-card";
 import { TeamMembersManager } from "@/app/components/team-member-manager";
+import TeamEditSection from "@/app/components/team-edit-section";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { NotFoundError, parseErrorMessage } from "@/types/errors";
 import { ScientificProject } from "@/types/scientificProject";
@@ -44,6 +45,7 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     let coaches: TeamCoach[] = [];
     let members: TeamMember[] = [];
     let scientificProjects: ScientificProject[] = [];
+
     let error: string | null = null;
     let membersError: string | null = null;
     let scientificProjectsError: string | null = null;
@@ -62,7 +64,10 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
 
     if (team && !error) {
         const [membersResult, scientificProjectsResult] = await Promise.allSettled([
-            Promise.all([service.getTeamCoach(id), service.getTeamMembers(id)]),
+            Promise.all([
+                service.getTeamCoach(id),
+                service.getTeamMembers(id),
+            ]),
             teamDisplayName
                 ? scientificProjectsService.getScientificProjectsByTeamName(teamDisplayName)
                 : Promise.resolve([] as ScientificProject[])
@@ -94,30 +99,33 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
 
     const currentUserEmail = currentUser?.email?.trim().toLowerCase();
 
-    const isCoach = !!currentUserEmail && coaches.some(
-        (coach) => coach.emailAddress?.trim().toLowerCase() === currentUserEmail
-    );
+    const isCoach =
+        !!currentUserEmail &&
+        coaches.some(
+            (coach) =>
+                coach.emailAddress?.trim().toLowerCase() === currentUserEmail
+        );
 
-    // ✅ FIX PRINCIPAL: múltiples coaches
+    // ✅ múltiples coaches
     const coachName =
         coaches.length > 0
             ? coaches
-                .map(c => c.name ?? c.emailAddress ?? "Unnamed coach")
-                .join(", ")
+                  .map(c => c.name ?? c.emailAddress ?? "Unnamed coach")
+                  .join(", ")
             : "No coach assigned";
 
     const initialMembers = members.map(toTeamMemberSnapshot);
 
     const membersKey = initialMembers
-        .map((member) => member.uri ?? String(member.id ?? member.name ?? ""))
+        .map(m => m.uri ?? String(m.id ?? m.name ?? ""))
         .join("|");
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="w-full max-w-3xl px-4 py-10">
-                <div className="w-full rounded-lg border bg-white p-6 shadow-sm dark:bg-black">
+                <div className="w-full rounded-lg border border-border bg-card p-6 shadow-sm">
 
-                    <h1 className="mb-2 text-2xl font-semibold">
+                    <h1 className="mb-2 text-2xl font-semibold text-foreground">
                         {teamDisplayName ?? "Unnamed team"}
                     </h1>
 
@@ -125,11 +133,24 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                         {team.city && (
                             <p><strong>City:</strong> {team.city}</p>
                         )}
-
-                        <p>
-                            <strong>Coach:</strong> {coachName}
-                        </p>
+                        <p><strong>Coach:</strong> {coachName}</p>
                     </div>
+
+                    {isAdmin && (
+                        <div className="mb-6 rounded-md border border-border p-4">
+                            <TeamEditSection
+                                team={{
+                                    id: team.id!,
+                                    name: team.name!,
+                                    city: team.city ?? undefined,
+                                    educationalCenter: team.educationalCenter ?? undefined,
+                                    category: team.category ?? undefined,
+                                    foundationYear: team.foundationYear ?? undefined,
+                                    inscriptionDate: team.inscriptionDate ?? undefined,
+                                }}
+                            />
+                        </div>
+                    )}
 
                     <h2 className="mt-8 mb-4 text-xl font-semibold">
                         Team Members
