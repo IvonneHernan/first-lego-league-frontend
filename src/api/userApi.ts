@@ -12,7 +12,7 @@ export type CreateUserPayload = {
 };
 
 export class UsersService {
-    constructor(private readonly authStrategy: AuthStrategy) { }
+    constructor(private readonly authStrategy: AuthStrategy) {}
 
     async getUsers(): Promise<User[]> {
         return fetchHalCollection<User>('/users', this.authStrategy, 'users');
@@ -40,6 +40,15 @@ export class UsersService {
     async createUser(user: CreateUserPayload): Promise<User> {
         const payload = { id: user.username, email: user.email, password: user.password };
         return createHalResource<User>('/users', payload, this.authStrategy, 'user');
+    }
+
+    async createAdministrator(user: CreateUserPayload): Promise<User> {
+        const payload = {
+            id: user.username,
+            email: user.email,
+            password: user.password,
+        };
+        return createHalResource<User>('/administrators', payload, this.authStrategy, 'administrator');
     }
 
     async patchUser(id: string, data: Partial<Pick<User, 'email' | 'password'>>): Promise<User> {
