@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Volunteer } from '@/types/volunteer';
 
@@ -13,25 +13,19 @@ export default function EditVolunteerModal({ volunteer, updateAction }: Readonly
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    const isEditingMode = searchParams.get('edit') === 'true';
-    const [isOpen, setIsOpen] = useState(isEditingMode);
+    const isOpen = searchParams.get('edit') === 'true';
     
     const [formData, setFormData] = useState({
         name: volunteer?.name || '',
         emailAddress: volunteer?.emailAddress || '',
         phoneNumber: volunteer?.phoneNumber || '',
-        expert: volunteer?.expert || false, 
+        expert: volunteer?.expert || false,
     });
     
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        setIsOpen(searchParams.get('edit') === 'true');
-    }, [searchParams]);
-
     const closeModal = () => {
-        setIsOpen(false);
         router.replace(`/volunteers/${encodeURIComponent(volunteer.uri!)}`);
     };
 
@@ -57,7 +51,6 @@ export default function EditVolunteerModal({ volunteer, updateAction }: Readonly
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 text-zinc-900 dark:text-zinc-100">
             <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl dark:bg-zinc-900 border dark:border-zinc-800">
                 <h2 className="text-xl font-semibold mb-4">Edit Volunteer</h2>
-                
                 {error && <div className="mb-4 text-sm text-red-500 bg-red-50 p-2 rounded">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,7 +91,7 @@ export default function EditVolunteerModal({ volunteer, updateAction }: Readonly
                                 checked={formData.expert}
                                 onChange={e => setFormData({ ...formData, expert: e.target.checked })}
                             />
-                            <label htmlFor="expert" className="text-sm font-medium">
+                            <label htmlFor="expert" className="text-sm font-medium cursor-pointer">
                                 Is Expert Judge
                             </label>
                         </div>

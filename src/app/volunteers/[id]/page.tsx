@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import EditVolunteerModal from "./_edit-volunteer-modal";
 import EmptyState from "@/app/components/empty-state";
 import { Volunteer } from "@/types/volunteer";
+import { User } from "@/types/user";
 
+type AuthenticatedUser = User & {
+    roles?: string[];
+};
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -18,12 +22,11 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
     const usersService = new UsersService(serverAuthProvider);
     const volunteerService = new VolunteersService(serverAuthProvider);
 
-    const currentUser = await usersService.getCurrentUser();
+    const currentUser = await usersService.getCurrentUser() as AuthenticatedUser | null;
 
-    const userIsAdmin =
-        currentUser?.username === 'admin' ||
-        (currentUser as any)?.id === 'admin' ||
-        (currentUser as any)?.roles?.includes('ADMIN');
+    const userIsAdmin = 
+        currentUser?.username === 'admin' || 
+        currentUser?.roles?.includes('ADMIN');
 
     let volunteer: Volunteer | null = null;
     try {
@@ -38,12 +41,11 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
         'use server';
 
         const authService = new UsersService(serverAuthProvider);
-        const user = await authService.getCurrentUser();
+        const user = await authService.getCurrentUser() as AuthenticatedUser | null;
 
         const isAdmin =
             user?.username === 'admin' ||
-            (user as any)?.id === 'admin' ||
-            (user as any)?.roles?.includes('ADMIN');
+            user?.roles?.includes('ADMIN');
 
         if (!isAdmin) {
             return { success: false, error: "Access denied: You are not an administrator" };
@@ -53,6 +55,7 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
             const service = new VolunteersService(serverAuthProvider);
             await service.updateVolunteer(uri, data);
             revalidatePath('/volunteers');
+            revalidatePath(`/volunteers/${encodeURIComponent(uri)}`);
             return { success: true };
         } catch (e: any) {
             return { success: false, error: e.message };
@@ -65,11 +68,7 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
         <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="w-full max-w-3xl px-4 py-10">
                 <div className="w-full rounded-lg border bg-white p-6 shadow-sm dark:bg-black">
-
-                    <h1 className="mb-2 text-2xl font-semibold">
-                        {volunteer.name || "Unnamed volunteer"}
-                    </h1>
-
+                    <h1 className="mb-2 text-2xl font-semibold">{volunteer.name || "Unnamed volunteer"}</h1>
                     <div className="mb-6 space-y-1 text-sm text-muted-foreground">
                         <p><strong>Role:</strong> {volunteer.type}</p>
                         <p><strong>Email:</strong> {volunteer.emailAddress || "—"}</p>
@@ -78,11 +77,10 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
 
                     {volunteer.type === "Judge" && (
                         <div className="mt-6 space-y-2">
-                            <h2 className="text-xl font-semibold">Judge Info</h2>
+                            <h2 className="text-xl font-semibold border-t pt-4">Judge Info</h2>
                             <p><strong>Expert:</strong> {volunteer.expert ? "Yes" : "No"}</p>
                         </div>
                     )}
-
                 </div>
                 {userIsAdmin && (
                     <EditVolunteerModal
