@@ -3,7 +3,7 @@ import { Volunteer } from "@/types/volunteer";
 import { fetchHalCollection, patchHal } from "./halClient";
 
 export class VolunteersService {
-    constructor(private readonly authStrategy: AuthStrategy) { }
+    constructor(private readonly authStrategy: AuthStrategy) {}
 
     async getVolunteers(): Promise<{ judges: Volunteer[], referees: Volunteer[], floaters: Volunteer[] }> {
         const [judges, referees, floaters] = await Promise.all([
@@ -12,41 +12,29 @@ export class VolunteersService {
             fetchHalCollection<any>('/floaters', this.authStrategy, 'floaters')
         ]);
 
+        const mapV = (v: any, type: 'Judge' | 'Referee' | 'Floater'): Volunteer => ({
+            uri: v.uri || '',
+            name: v.name || '',
+            emailAddress: v.emailAddress || '',
+            phoneNumber: v.phoneNumber || '',
+            expert: !!v.expert,
+            type
+        } as Volunteer);
+
         return {
-            judges: judges.map(j => ({
-                uri: j.uri || '',
-                name: j.name || '',
-                emailAddress: j.emailAddress || '',
-                phoneNumber: j.phoneNumber || '',
-                expert: j.expert || false,
-                type: 'Judge' as const
-            })) as unknown as Volunteer[],
-            referees: referees.map(r => ({
-                uri: r.uri || '',
-                name: r.name || '',
-                emailAddress: r.emailAddress || '',
-                phoneNumber: r.phoneNumber || '',
-                type: 'Referee' as const
-            })) as unknown as Volunteer[],
-            floaters: floaters.map(f => ({
-                uri: f.uri || '',
-                name: f.name || '',
-                emailAddress: f.emailAddress || '',
-                phoneNumber: f.phoneNumber || '',
-                type: 'Floater' as const
-            })) as unknown as Volunteer[]
+            judges: judges.map(v => mapV(v, 'Judge')),
+            referees: referees.map(v => mapV(v, 'Referee')),
+            floaters: floaters.map(v => mapV(v, 'Floater'))
         };
     }
 
     async updateVolunteer(uri: string, data: Partial<Volunteer>): Promise<void> {
-
         const payload = {
             name: data.name,
             emailAddress: data.emailAddress,
             phoneNumber: data.phoneNumber,
-            expert: data.expert
+            expert: data.expert // ✅ Enviamos el estado del checkbox
         };
-
         await patchHal(uri, payload, this.authStrategy);
     }
 }

@@ -7,9 +7,7 @@ import EmptyState from "@/app/components/empty-state";
 import { Volunteer } from "@/types/volunteer";
 import { User } from "@/types/user";
 
-type AuthenticatedUser = User & {
-    roles?: string[];
-};
+type AuthenticatedUser = User & { roles?: string[] };
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -18,47 +16,34 @@ interface Props {
 
 export default async function VolunteerDetailPage(props: Readonly<Props>) {
     const { id } = await props.params;
-
     const usersService = new UsersService(serverAuthProvider);
     const volunteerService = new VolunteersService(serverAuthProvider);
 
     const currentUser = await usersService.getCurrentUser() as AuthenticatedUser | null;
-
-    const userIsAdmin = 
-        currentUser?.username === 'admin' || 
-        currentUser?.roles?.includes('ADMIN');
+    const userIsAdmin = currentUser?.username === 'admin' || currentUser?.roles?.includes('ADMIN') || false;
 
     let volunteer: Volunteer | null = null;
     try {
         const data = await volunteerService.getVolunteers();
         const all = [...data.judges, ...data.referees, ...data.floaters];
         volunteer = all.find(v => v.uri === decodeURIComponent(id)) ?? null;
-    } catch (e) {
-        console.error("Error fetching volunteers:", e);
-    }
+    } catch (e) { console.error(e); }
 
     async function updateVolunteerData(uri: string, data: Partial<Volunteer>) {
         'use server';
-
-        const authService = new UsersService(serverAuthProvider);
-        const user = await authService.getCurrentUser() as AuthenticatedUser | null;
-
-        const isAdmin =
-            user?.username === 'admin' ||
-            user?.roles?.includes('ADMIN');
-
-        if (!isAdmin) {
-            return { success: false, error: "Access denied: You are not an administrator" };
+        const auth = new UsersService(serverAuthProvider);
+        const user = await auth.getCurrentUser() as AuthenticatedUser | null;
+        if (!(user?.username === 'admin' || user?.roles?.includes('ADMIN'))) {
+            return { success: false, error: "Access denied" };
         }
-
         try {
             const service = new VolunteersService(serverAuthProvider);
             await service.updateVolunteer(uri, data);
             revalidatePath('/volunteers');
             revalidatePath(`/volunteers/${encodeURIComponent(uri)}`);
             return { success: true };
-        } catch (e: any) {
-            return { success: false, error: e.message };
+        } catch (e) {
+            return { success: false, error: e instanceof Error ? e.message : "Unknown error" };
         }
     }
 
@@ -68,8 +53,15 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
         <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="w-full max-w-3xl px-4 py-10">
                 <div className="w-full rounded-lg border bg-white p-6 shadow-sm dark:bg-black">
-                    <h1 className="mb-2 text-2xl font-semibold">{volunteer.name || "Unnamed volunteer"}</h1>
-                    <div className="mb-6 space-y-1 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-2xl font-semibold">{volunteer.name || "Unnamed"}</h1>
+                        {volunteer.type === 'Judge' && volunteer.expert && (
+                            <span className="bg-amber-100 text-amber-700 text-xs px-3 py-1 rounded-full font-bold uppercase border border-amber-200">
+                                Expert Judge
+                            </span>
+                        )}
+                    </div>
+                    <div className="mt-4 space-y-1 text-sm text-muted-foreground border-t pt-4">
                         <p><strong>Role:</strong> {volunteer.type}</p>
                         <p><strong>Email:</strong> {volunteer.emailAddress || "—"}</p>
                         <p><strong>Phone:</strong> {volunteer.phoneNumber || "—"}</p>
@@ -82,12 +74,7 @@ export default async function VolunteerDetailPage(props: Readonly<Props>) {
                         </div>
                     )}
                 </div>
-                {userIsAdmin && (
-                    <EditVolunteerModal
-                        volunteer={volunteer}
-                        updateAction={updateVolunteerData}
-                    />
-                )}
+                {userIsAdmin && <EditVolunteerModal volunteer={volunteer} updateAction={updateVolunteerData} />}
             </div>
         </div>
     );

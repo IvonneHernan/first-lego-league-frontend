@@ -43,11 +43,7 @@ export class UsersService {
     }
 
     async createAdministrator(user: CreateUserPayload): Promise<User> {
-        const payload = {
-            id: user.username,
-            email: user.email,
-            password: user.password,
-        };
+        const payload = { id: user.username, email: user.email, password: user.password };
         return createHalResource<User>('/administrators', payload, this.authStrategy, 'administrator');
     }
 
