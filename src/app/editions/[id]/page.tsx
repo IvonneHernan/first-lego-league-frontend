@@ -115,7 +115,7 @@ function toMediaItem(content: MediaContent): MediaItem {
         uri: content.uri ?? content.link?.("self")?.href,
         id: content.id,
         type: content.type,
-        url: content.url ?? content.id,  // API stores the media URL in `id` when no separate url field
+        url: content.url ?? content.id,  // real API omits `url`; the `id` field holds the media URL
     };
 }
 
