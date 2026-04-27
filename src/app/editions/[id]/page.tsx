@@ -1,5 +1,7 @@
 import { AwardsService } from "@/api/awardApi";
 import { EditionsService } from "@/api/editionApi";
+import { LeaderboardService } from "@/api/leaderboardApi";
+import { MediaService } from "@/api/mediaApi";
 import { UsersService } from "@/api/userApi";
 import { buttonVariants } from "@/app/components/button";
 import ErrorAlert from "@/app/components/error-alert";
