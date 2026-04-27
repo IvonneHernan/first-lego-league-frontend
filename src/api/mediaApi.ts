@@ -14,10 +14,10 @@ export class MediaService {
         );
     }
 
-    async createMedia(payload: { id: string; type: string; edition: string }): Promise<MediaContent> {
+    async createMedia(payload: { url: string; type: string; edition: string }): Promise<MediaContent> {
         return createHalResource<MediaContent>(
             '/mediaContents',
-            { url: payload.id, type: payload.type, edition: payload.edition },
+            { url: payload.url, type: payload.type, edition: payload.edition },
             this.authStrategy,
             'mediaContent'
         );

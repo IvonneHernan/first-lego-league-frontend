@@ -5,5 +5,5 @@ import { serverAuthProvider } from '@/lib/authProvider';
 
 export async function addMedia(imageUrl: string, editionUri: string, type: string): Promise<void> {
     const service = new MediaService(serverAuthProvider);
-    await service.createMedia({ id: imageUrl, type, edition: editionUri });
+    await service.createMedia({ url: imageUrl, type, edition: editionUri });
 }
