@@ -14,6 +14,7 @@ import { isAdmin } from "@/lib/authz";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { Award } from "@/types/award";
 import { Edition } from "@/types/edition";
+import type { LeaderboardItem } from "@/types/leaderboard";
 import { MediaContent } from "@/types/mediaContent";
 import { Team } from "@/types/team";
 import { User } from "@/types/user";
