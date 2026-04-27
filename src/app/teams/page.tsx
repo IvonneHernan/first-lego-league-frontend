@@ -9,6 +9,7 @@ import PaginationControls from "@/app/components/pagination-controls";
 import TeamDeleteSection from "./[id]/team-delete-section";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
+import { getTeamDisplayName } from "@/lib/teamUtils";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { ApiError, parseErrorMessage } from "@/types/errors";
 import type { HalPage } from "@/types/pagination";
@@ -19,10 +20,6 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 5;
-
-function getTeamDisplayName(team: Team) {
-    return team.name ?? team.id ?? "Unnamed team";
-}
 
 function getTeamKey(team: Team, index: number) {
     return team.uri ?? team.id ?? `team-${index}`;
