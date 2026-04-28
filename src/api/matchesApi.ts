@@ -73,6 +73,11 @@ export class MatchesService {
         return fetchHalResource<Team>(`/matches/${matchId}/teamB`, this.authStrategy);
     }
 
+    async getMatchCompetitionTable(id: string): Promise<CompetitionTable> {
+        const matchId = encodeURIComponent(id);
+        return fetchHalResource<CompetitionTable>(`/matches/${matchId}/competitionTable`, this.authStrategy);
+    }
+
     async getRounds(): Promise<Round[]> {
         return fetchHalCollection<Round>(
             "/rounds?sort=number,asc&size=1000",
