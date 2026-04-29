@@ -17,6 +17,19 @@ export type UpdateEditionPayload = {
     description?: string;
 };
 
+function normalizeResourcePath(resourceUri: string) {
+    if (resourceUri.startsWith("/")) {
+        return resourceUri;
+    }
+
+    try {
+        const parsed = new URL(resourceUri);
+        return `${parsed.pathname}${parsed.search}`;
+    } catch {
+        return resourceUri;
+    }
+}
+
 export class EditionsService {
     constructor(private readonly authStrategy: AuthStrategy) {}
 
@@ -33,6 +46,10 @@ export class EditionsService {
         return fetchHalResource<Edition>(`/editions/${editionId}`, this.authStrategy);
     }
 
+    async getEditionByUri(resourceUri: string): Promise<Edition> {
+        return fetchHalResource<Edition>(normalizeResourcePath(resourceUri), this.authStrategy);
+    }
+
     async getEditionByYear(year: string | number): Promise<Edition | null> {
         const normalizedYear = encodeURIComponent(String(year));
         const editions = await fetchHalCollection<Edition>(
@@ -41,6 +58,14 @@ export class EditionsService {
             'editions'
         );
         return editions.length > 0 ? editions[0] : null;
+    }
+
+    async getEditionsByVenueName(venueName: string): Promise<Edition[]> {
+        return fetchHalCollection<Edition>(
+            `/editions/search/findByVenueName?venueName=${encodeURIComponent(venueName)}`,
+            this.authStrategy,
+            'editions'
+        );
     }
 
     async getEditionTeams(id: string): Promise<Team[]> {

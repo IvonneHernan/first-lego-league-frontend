@@ -33,6 +33,7 @@ function createEmptyMember() {
         name: "",
         age: "",
         gender: "",
+        tShirtSize: "",
     };
 }
 
@@ -435,8 +436,13 @@ export default function NewTeamForm() {
                 </div>
             </SectionCard>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting || isRedirecting}>
-                {isSubmitting || isRedirecting ? "Creating..." : "Create team"}
+            <Button
+                type="submit"
+                className="w-full"
+                loading={isSubmitting || isRedirecting}
+                loadingText={isRedirecting ? "Redirecting..." : "Creating team..."}
+            >
+                Create team
             </Button>
         </form>
     );

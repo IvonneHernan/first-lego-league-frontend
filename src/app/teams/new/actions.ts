@@ -15,10 +15,10 @@ import {
     DEFAULT_TEAM_MEMBER_ROLE,
     MAX_TEAM_MEMBERS,
     TEAM_CATEGORY_OPTIONS,
+    TEAM_MEMBER_GENDER_OPTIONS,
     Team,
     TeamCategory,
     TeamCoach,
-    TEAM_MEMBER_GENDER_OPTIONS,
     TeamMemberGender,
 } from "@/types/team";
 import { revalidatePath } from "next/cache";
@@ -27,6 +27,7 @@ type TeamMemberInput = {
     name: string;
     age: string;
     gender: string;
+    tShirtSize: string;
 };
 
 type CoachInput = {
@@ -50,6 +51,7 @@ type NormalizedTeamMemberInput = {
     name: string;
     age: number;
     gender: TeamMemberGender;
+    tShirtSize: string;
 };
 
 type NormalizedCoachInput = {
@@ -268,6 +270,10 @@ function validateTeamPayload(data: CreateTeamFormPayload): ValidatedTeamPayload 
             `Member ${index + 1} name is required.`
         );
         const age = parseInteger(member.age, `Member ${index + 1} age must be a valid number.`);
+        const tShirtSize = normalizeRequiredString(
+            member.tShirtSize,
+            `Member ${index + 1} t-shirt size is required.`
+        );
 
         if (age < 1 || age > 99) {
             throw new ValidationError(`Member ${index + 1} age must be between 1 and 99.`);
@@ -286,6 +292,7 @@ function validateTeamPayload(data: CreateTeamFormPayload): ValidatedTeamPayload 
             name: nameValue,
             age,
             gender: normalizedGender as TeamMemberGender,
+            tShirtSize,
         };
     });
 
@@ -392,6 +399,7 @@ export async function createTeam(data: CreateTeamFormPayload) {
                 gender: member.gender,
                 role: DEFAULT_TEAM_MEMBER_ROLE,
                 team: teamReference,
+                tShirtSize: member.tShirtSize,
             });
         }
 
@@ -421,4 +429,99 @@ export async function createTeam(data: CreateTeamFormPayload) {
     revalidatePath("/teams");
 
     return "/teams";
+}
+
+export type UpdateTeamFormPayload = {
+    id: string;
+    name: string;
+    city?: string | null;
+    educationalCenter?: string | null;
+    category: string;
+    foundationYear?: number | null;
+    inscriptionDate?: string | null;
+};
+
+function validateUpdateTeamPayload(data: UpdateTeamFormPayload) {
+    // El name es opcional en actualización, usa el id como fallback
+    const name = data.name?.trim() || data.id;
+
+    const city = data.city?.toString().trim() || null;
+    const educationalCenter = data.educationalCenter?.toString().trim() || null;
+
+    const rawCategory = normalizeRequiredString(data.category, "Category is required.");
+    const matchedCategory = TEAM_CATEGORY_OPTIONS.find(
+        (c) => c.toUpperCase() === rawCategory.toUpperCase()
+    );
+
+    if (!matchedCategory) {
+        throw new ValidationError("Please select a valid team category.");
+    }
+
+    let foundationYear: number | null = null;
+
+    if (data.foundationYear !== undefined && data.foundationYear !== null) {
+        foundationYear = Number(data.foundationYear);
+
+        if (Number.isNaN(foundationYear)) {
+            throw new ValidationError("Foundation year must be a valid number.");
+        }
+
+        if (foundationYear < 1998) {
+            throw new ValidationError("Foundation year must be 1998 or later.");
+        }
+    }
+
+    let inscriptionDate: string | null = null;
+
+    if (data.inscriptionDate) {
+        ensureIsoDate(data.inscriptionDate, "Invalid inscription date format.");
+        inscriptionDate = data.inscriptionDate;
+    }
+
+    return {
+        id: data.id,
+        name,
+        city,
+        educationalCenter,
+        category: matchedCategory as TeamCategory,
+        foundationYear,
+        inscriptionDate,
+    };
+}
+
+export async function updateTeam(data: UpdateTeamFormPayload) {
+    const auth = await serverAuthProvider.getAuth();
+    if (!auth) {
+        throw new AuthenticationError();
+    }
+
+    const currentUser = await new UsersService(serverAuthProvider).getCurrentUser();
+
+    if (!isAdmin(currentUser)) {
+        throw new AuthenticationError("You are not allowed to update teams.", 403);
+    }
+
+    const validated = validateUpdateTeamPayload(data);
+
+    const service = new TeamsService(serverAuthProvider);
+
+    const team = await service.getTeamById(validated.id);
+
+    if (!team) {
+        throw new ApiError("Team not found.", 404);
+    }
+
+    await service.updateTeam(validated.id, {
+        name: validated.name,
+        city: validated.city ?? undefined,
+        educationalCenter: validated.educationalCenter ?? undefined,
+        category: validated.category,
+        foundationYear: validated.foundationYear ?? undefined,
+        inscriptionDate: validated.inscriptionDate ?? undefined,
+    });
+
+    revalidatePath(`/teams/${validated.id}`);
+    revalidatePath("/teams");
+
+    return { success: true };
 }
