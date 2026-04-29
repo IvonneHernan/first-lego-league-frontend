@@ -1,8 +1,11 @@
 import type { AuthStrategy } from "@/lib/authProvider";
 import { Edition } from "@/types/edition";
+import type { CompetitionTable } from "@/types/competitionTable";
+import { ApiError } from "@/types/errors";
 import type { HalPage } from "@/types/pagination";
 import { Team } from "@/types/team";
 import {
+    API_BASE_URL,
     createHalResource,
     fetchHalCollection,
     fetchHalPagedCollection,
@@ -129,5 +132,25 @@ export class EditionsService {
         }
 
         return mergeHal<Edition>(resource);
+    }
+
+    async getEditionCompetitionTables(id: string): Promise<CompetitionTable[]> {
+        const encodedId = encodeURIComponent(id);
+        const url = `${API_BASE_URL}/editions/${encodedId}/tables`;
+        const authorization = await this.authStrategy.getAuth();
+
+        const res = await fetch(url, {
+            headers: {
+                Accept: "application/json",
+                ...(authorization ? { Authorization: authorization } : {}),
+            },
+            cache: "no-store",
+        });
+
+        if (!res.ok) {
+            throw new ApiError("Failed to fetch competition tables", res.status, true);
+        }
+
+        return res.json() as Promise<CompetitionTable[]>;
     }
 }
