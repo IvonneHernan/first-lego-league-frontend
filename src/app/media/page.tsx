@@ -13,6 +13,17 @@ interface MediaPageProps {
     readonly searchParams: Promise<{ url?: string | string[] }>;
 }
 
+interface MediaResult {
+    readonly media: MediaContent | null;
+    readonly error: string | null;
+}
+
+interface EditionContext {
+    readonly edition: Edition | null;
+    readonly mediaItems: MediaContent[];
+    readonly warning: string | null;
+}
+
 function firstParam(value: string | string[] | undefined): string | null {
     if (Array.isArray(value)) {
         return value[0] ?? null;
@@ -54,59 +65,78 @@ function getMediaTitle(media: MediaContent | null): string {
     return media.type ? `Media ${media.type}` : "Media";
 }
 
+async function getMedia(mediaUrl: string, mediaService: MediaService): Promise<MediaResult> {
+    try {
+        return {
+            media: await mediaService.getMediaById(mediaUrl),
+            error: null,
+        };
+    } catch (e) {
+        console.error("Failed to fetch media:", e);
+        return {
+            media: null,
+            error: e instanceof NotFoundError
+                ? "This media does not exist."
+                : parseErrorMessage(e),
+        };
+    }
+}
+
+async function getEditionContext(
+    media: MediaContent,
+    mediaService: MediaService,
+    editionService: EditionsService
+): Promise<EditionContext> {
+    const editionUri = getEditionUri(media);
+
+    if (!editionUri) {
+        return { edition: null, mediaItems: [media], warning: null };
+    }
+
+    try {
+        return {
+            edition: await editionService.getEditionByUri(editionUri),
+            mediaItems: await mediaService.getMediaByEdition(editionUri),
+            warning: null,
+        };
+    } catch (e) {
+        console.error("Failed to fetch media edition data:", e);
+        return {
+            edition: null,
+            mediaItems: [media],
+            warning: parseErrorMessage(e),
+        };
+    }
+}
+
+function renderMediaError(message: string) {
+    return (
+        <PageShell
+            eyebrow="Media"
+            title="Media not found"
+            description="The requested media could not be loaded."
+        >
+            <ErrorAlert message={message} />
+        </PageShell>
+    );
+}
+
 export default async function MediaPage({ searchParams }: MediaPageProps) {
-    const mediaService = new MediaService(serverAuthProvider);
-    const editionService = new EditionsService(serverAuthProvider);
     const mediaUrl = firstParam((await searchParams).url);
 
-    let media: MediaContent | null = null;
-    let edition: Edition | null = null;
-    let mediaItems: MediaContent[] = [];
-    let error: string | null = null;
-
     if (!mediaUrl) {
-        error = "No media URL was provided.";
+        return renderMediaError("No media URL was provided.");
     }
 
-    if (mediaUrl && !error) {
-        try {
-            media = await mediaService.getMediaById(mediaUrl);
-        } catch (e) {
-            console.error("Failed to fetch media:", e);
-            error = e instanceof NotFoundError
-                ? "This media does not exist."
-                : parseErrorMessage(e);
-        }
-    }
-
-    if (media && !error) {
-        const editionUri = getEditionUri(media);
-
-        if (editionUri) {
-            try {
-                edition = await editionService.getEditionByUri(editionUri);
-                mediaItems = await mediaService.getMediaByEdition(editionUri);
-            } catch (e) {
-                console.error("Failed to fetch media edition data:", e);
-                error = parseErrorMessage(e);
-            }
-        } else {
-            mediaItems = [media];
-        }
-    }
+    const mediaService = new MediaService(serverAuthProvider);
+    const editionService = new EditionsService(serverAuthProvider);
+    const { media, error } = await getMedia(mediaUrl, mediaService);
 
     if (error || !media) {
-        return (
-            <PageShell
-                eyebrow="Media"
-                title="Media not found"
-                description="The requested media could not be loaded."
-            >
-                <ErrorAlert message={error ?? "This media does not exist."} />
-            </PageShell>
-        );
+        return renderMediaError(error ?? "This media does not exist.");
     }
 
+    const { edition, mediaItems, warning } = await getEditionContext(media, mediaService, editionService);
     const normalizedMediaItems = mediaItems.length > 0 ? mediaItems : [media];
     const activeIndex = Math.max(
         normalizedMediaItems.findIndex((item) => getMediaUrl(item) === getMediaUrl(media)),
@@ -120,6 +150,11 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
             title={getMediaTitle(media)}
             description="View this media item and move through the other media from the same edition."
         >
+            {warning && (
+                <div className="mb-4">
+                    <ErrorAlert message={warning} />
+                </div>
+            )}
             <MediaViewer
                 media={toMediaViewerItem(media)}
                 mediaItems={normalizedMediaItems.map(toMediaViewerItem)}

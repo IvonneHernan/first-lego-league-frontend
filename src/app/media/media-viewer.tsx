@@ -7,7 +7,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, FileIcon, ImageIcon, Video } f
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TouchEvent } from "react";
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 export interface MediaViewerItem {
     readonly id?: string;
@@ -138,11 +138,11 @@ export function MediaViewer({ media, mediaItems, activeIndex, edition }: MediaVi
         return mediaItems[(currentPosition + 1) % mediaItems.length];
     }, [canNavigate, currentPosition, mediaItems]);
 
-    function goTo(item: MediaViewerItem | null) {
+    const goTo = useCallback((item: MediaViewerItem | null) => {
         if (item) {
             router.push(getMediaHref(item));
         }
-    }
+    }, [router]);
 
     function onTouchEnd(event: TouchEvent<HTMLDivElement>) {
         if (touchStartX.current === null) return;
@@ -167,7 +167,7 @@ export function MediaViewer({ media, mediaItems, activeIndex, edition }: MediaVi
 
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    });
+    }, [goTo, nextItem, previousItem]);
 
     const url = getMediaUrl(media);
     const editionHref = edition?.id ? `/editions/${edition.id}` : null;
