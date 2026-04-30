@@ -2,6 +2,7 @@
 
 import * as Dialog from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, Film, FileIcon, X, ExternalLink, PlayCircle } from "lucide-react";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 export interface MediaItem {
@@ -24,6 +25,15 @@ function isImage(type?: string): boolean {
 
 function isVideo(type?: string): boolean {
     return (type?.startsWith("video/")) ?? false;
+}
+
+function getMediaUrl(item: MediaItem): string | null {
+    return item.url ?? item.id ?? null;
+}
+
+export function getMediaDetailHref(item: MediaItem): string | null {
+    const url = getMediaUrl(item);
+    return url ? `/media?url=${encodeURIComponent(url)}` : null;
 }
 
 // ─── Shared thumbnail renderers ───────────────────────────────────────────────
@@ -126,20 +136,31 @@ function LightboxMedia({ item, index }: { readonly item: MediaItem; readonly ind
 
 function LightboxContent({ item, index }: { readonly item: MediaItem; readonly index: number }) {
     const ytId = getYouTubeId(item.url);
+    const detailHref = getMediaDetailHref(item);
 
     return (
         <div className="flex flex-col items-center gap-5">
             <LightboxMedia item={item} index={index} />
-            {!ytId && item.url && (
-                <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
-                >
-                    Open original <ExternalLink className="h-4 w-4" />
-                </a>
-            )}
+            <div className="flex flex-wrap justify-center gap-2">
+                {detailHref && (
+                    <Link
+                        href={detailHref}
+                        className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
+                    >
+                        View detail <ExternalLink className="h-4 w-4" />
+                    </Link>
+                )}
+                {!ytId && item.url && (
+                    <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-secondary"
+                    >
+                        Open original <ExternalLink className="h-4 w-4" />
+                    </a>
+                )}
+            </div>
         </div>
     );
 }
