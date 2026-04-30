@@ -111,14 +111,8 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
         if (matchesResult.status === "fulfilled") {
             const allMatches = matchesResult.value;
             
-            const candidateMatches = allMatches.filter((m) => {
-                const teamAHref = m.link("teamA")?.href;
-                const teamBHref = m.link("teamB")?.href;
-                return teamAHref?.endsWith(`/${id}`) || teamBHref?.endsWith(`/${id}`);
-            });
-            
             const resolvedMatches = await Promise.all(
-                candidateMatches.map(async (m) => {
+                allMatches.map(async (m) => {
                     const matchIdStr = m.uri ? m.uri.split("/").pop() : String(m.id);
                     if (!matchIdStr) return { m, hasTeam: false, table: "Unknown" };
                     
