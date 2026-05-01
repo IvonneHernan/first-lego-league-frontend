@@ -10,6 +10,7 @@ interface TeamShareButtonProps {
 export default function TeamShareButton({ teamName }: TeamShareButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const currentUrl = typeof window !== "undefined" ? window.location.href : "";
 
@@ -28,25 +29,42 @@ export default function TeamShareButton({ teamName }: TeamShareButtonProps) {
     );
 
     async function handleShare() {
+        setError(null);
+
         if (navigator.share) {
-            await navigator.share({
-                title: teamName,
-                text: shareText,
-                url: currentUrl,
-            });
-            return;
+            try {
+                await navigator.share({
+                    title: teamName,
+                    text: shareText,
+                    url: currentUrl,
+                });
+
+                return;
+            } catch (e) {
+                console.error("Native share failed:", e);
+                setError("Choose one of the sharing options below.");
+            }
         }
 
         setIsOpen(true);
     }
 
     async function handleCopyLink() {
-        await navigator.clipboard.writeText(currentUrl);
-        setCopied(true);
+        setError(null);
 
-        setTimeout(() => {
+        try {
+            await navigator.clipboard.writeText(currentUrl);
+            setCopied(true);
+
+            setTimeout(() => {
+                setCopied(false);
+            }, 2000);
+        } catch (e) {
+            console.error("Clipboard copy failed:", e);
             setCopied(false);
-        }, 2000);
+            setError("Could not copy the link. Please use X or WhatsApp instead.");
+            setIsOpen(true);
+        }
     }
 
     return (
@@ -70,6 +88,12 @@ export default function TeamShareButton({ teamName }: TeamShareButtonProps) {
                             Share this team page with coaches, parents, or fans.
                         </p>
                     </div>
+
+                   {error && (
+                        <p className="mb-3 rounded-md border border-border bg-secondary px-3 py-2 text-xs text-muted-foreground">
+                            {error}
+                        </p>
+                    )}
 
                     <div className="space-y-2">
                         <Button
@@ -105,7 +129,10 @@ export default function TeamShareButton({ teamName }: TeamShareButtonProps) {
                             variant="secondary"
                             size="sm"
                             className="w-full"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                setIsOpen(false);
+                                setError(null);
+                            }}
                         >
                             Close
                         </Button>
