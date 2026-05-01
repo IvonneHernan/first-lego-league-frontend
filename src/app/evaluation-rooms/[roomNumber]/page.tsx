@@ -1,7 +1,6 @@
 import { ProjectRoomsService } from "@/api/projectRoomApi";
-import { ScientificProjectsService } from "@/api/scientificProjectApi";
 import { UsersService } from "@/api/userApi";
-import { fetchHalResource, mergeHalArray } from "@/api/halClient";
+import { fetchHalCollection, mergeHalArray } from "@/api/halClient";
 import ErrorAlert from "@/app/components/error-alert";
 import EmptyState from "@/app/components/empty-state";
 import PageShell from "@/app/components/page-shell";
@@ -19,24 +18,6 @@ export const dynamic = "force-dynamic";
 
 interface EvaluationRoomPageProps {
     readonly params: Promise<{ roomNumber: string }>;
-}
-
-function normalizeUri(resourceUri: string | null | undefined): string | null {
-    if (!resourceUri) {
-        return null;
-    }
-
-    const sanitized = resourceUri.split(/[?#]/, 1)[0] ?? null;
-
-    if (!sanitized) {
-        return null;
-    }
-
-    return sanitized.replace(/^https?:\/\/[^/]+/i, "");
-}
-
-function getProjectRoomHref(project: ScientificProject): string | null {
-    return project.link("projectRoom")?.href ?? null;
 }
 
 function getProjectHref(project: ScientificProject): string | null {
@@ -59,44 +40,24 @@ function getTeamLabel(project: ScientificProject, index: number): string {
     return teamId ? `Team ${teamId}` : `Team ${index + 1}`;
 }
 
-function getRoomSelfHref(room: ProjectRoom): string | null {
-    return normalizeUri(room.uri) ?? normalizeUri(room.link("self")?.href);
-}
-
-async function expandProject(project: ScientificProject): Promise<ScientificProject> {
-    const href = project.uri ?? project.link("self")?.href;
-
-    if (!href) {
-        return project;
-    }
-
-    try {
-        return await fetchHalResource<ScientificProject>(href, serverAuthProvider);
-    } catch (e) {
-        console.error("Failed to expand scientific project:", e);
-        return project;
-    }
-}
-
-async function getProjectsForRoom(
-    room: ProjectRoom,
-    projectsService: ScientificProjectsService
-): Promise<ScientificProject[]> {
+async function getProjectsForRoom(room: ProjectRoom): Promise<ScientificProject[]> {
     const embeddedProjects = room.embeddedArray("scientificProjects");
 
     if (embeddedProjects && embeddedProjects.length > 0) {
         return mergeHalArray<ScientificProject>(embeddedProjects);
     }
 
-    const roomSelfHref = getRoomSelfHref(room);
-    const allProjects = await projectsService.getScientificProjects();
-    const expandedProjects = await Promise.all(allProjects.map(expandProject));
+    const projectsHref = room.link("scientificProjects")?.href;
 
-    return expandedProjects.filter((project) => {
-        const projectRoomHref = normalizeUri(getProjectRoomHref(project));
+    if (!projectsHref) {
+        return [];
+    }
 
-        return !!roomSelfHref && !!projectRoomHref && projectRoomHref === roomSelfHref;
-    });
+    return fetchHalCollection<ScientificProject>(
+        projectsHref,
+        serverAuthProvider,
+        "scientificProjects"
+    );
 }
 
 export default async function EvaluationRoomPage(
@@ -106,7 +67,6 @@ export default async function EvaluationRoomPage(
 
     const usersService = new UsersService(serverAuthProvider);
     const roomsService = new ProjectRoomsService(serverAuthProvider);
-    const projectsService = new ScientificProjectsService(serverAuthProvider);
 
     const currentUser = await usersService.getCurrentUser().catch(() => null);
 
@@ -129,7 +89,7 @@ export default async function EvaluationRoomPage(
             throw new NotFoundError("This evaluation room does not exist.");
         }
 
-        projects = await getProjectsForRoom(room, projectsService);
+        projects = await getProjectsForRoom(room);
     } catch (e) {
         console.error("Failed to fetch evaluation room:", e);
         error = e instanceof NotFoundError

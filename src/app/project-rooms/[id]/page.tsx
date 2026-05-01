@@ -51,19 +51,23 @@ export default async function ProjectRoomDetailPage(props: Readonly<ProjectRoomD
         ? mergeHalArray<ScientificProject>(room.embeddedArray("scientificProjects"))
         : [];
 
+    const evaluationRoomNumber = room?.roomNumber ?? id;
+
     return (
         <PageShell
             eyebrow="Judging"
             title="Project Room"
             description="Details about this project room, its judge, panelists, and assigned scientific projects."
             heroAside={
+            room ? (
                 <Link
-                    href={`/evaluation-rooms/${id}`}
+                    href={`/evaluation-rooms/${evaluationRoomNumber}`}
                     className={buttonVariants({ variant: "default", size: "sm" })}
                 >
                     Open judge evaluation view
                 </Link>
-            }
+            ) : undefined
+        }
         >
             {error && <ErrorAlert message={error} />}
 
