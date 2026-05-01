@@ -11,6 +11,7 @@ import { NotFoundError, parseErrorMessage } from "@/types/errors";
 import { ScientificProject } from "@/types/scientificProject";
 import { Team, TeamCoach, TeamMember, TeamMemberSnapshot } from "@/types/team";
 import { User } from "@/types/user";
+import TeamShareButton from "./team-share-button";
 
 interface TeamDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -121,88 +122,92 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
         .join("|");
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="w-full max-w-3xl px-4 py-10">
-                <div className="w-full rounded-lg border border-border bg-card p-6 shadow-sm">
-
-                    <h1 className="mb-2 text-2xl font-semibold text-foreground">
+        <div className="min-h-screen bg-background p-4 sm:p-8">
+            <div className="mx-auto max-w-4xl">
+                <div className="mb-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <h1 className="text-2xl font-semibold text-foreground">
                         {teamDisplayName ?? "Unnamed team"}
                     </h1>
 
-                    <div className="mb-6 space-y-1 text-sm text-muted-foreground">
-                        {team.city && (
-                            <p><strong>City:</strong> {team.city}</p>
-                        )}
-                        <p><strong>Coach:</strong> {coachName}</p>
-                    </div>
+                    <TeamShareButton teamName={teamDisplayName ?? "Unnamed team"} />
+                </div>
 
-                    {isAdmin && (
-                        <div className="mb-6 rounded-md border border-border p-4">
-                            <TeamEditSection
-                                team={{
-                                    id: team.id!,
-                                    name: team.name!,
-                                    city: team.city ?? undefined,
-                                    educationalCenter: team.educationalCenter ?? undefined,
-                                    category: team.category ?? undefined,
-                                    foundationYear: team.foundationYear ?? undefined,
-                                    inscriptionDate: team.inscriptionDate ?? undefined,
-                                }}
-                            />
-                        </div>
+                <div className="mb-6 space-y-1 text-sm text-muted-foreground">
+                    {team.city && (
+                        <p>
+                            <strong>City:</strong> {team.city}
+                        </p>
                     )}
+                    <p>
+                        <strong>Coach:</strong> {coachName}
+                    </p>
+                </div>
 
-                    <h2 className="mt-8 mb-4 text-xl font-semibold">
-                        Team Members
+                {isAdmin && (
+                    <div className="mb-6 rounded-md border border-border p-4">
+                        <TeamEditSection
+                            team={{
+                                id: team.id!,
+                                name: team.name!,
+                                city: team.city ?? undefined,
+                                educationalCenter: team.educationalCenter ?? undefined,
+                                category: team.category ?? undefined,
+                                foundationYear: team.foundationYear ?? undefined,
+                                inscriptionDate: team.inscriptionDate ?? undefined,
+                            }}
+                        />
+                    </div>
+                )}
+
+                <h2 className="mt-8 mb-4 text-xl font-semibold">
+                    Team Members
+                </h2>
+
+                {!membersError && (
+                    <TeamMembersManager
+                        key={`${id}-${membersKey}`}
+                        teamId={id}
+                        initialMembers={initialMembers}
+                        isCoach={isCoach}
+                        isAdmin={isAdmin}
+                    />
+                )}
+
+                {membersError && (
+                    <ErrorAlert message={membersError} />
+                )}
+
+                <section aria-labelledby="team-projects-heading">
+                    <h2 id="team-projects-heading" className="mt-8 mb-4 text-xl font-semibold">
+                        Scientific Projects
                     </h2>
 
-                    {!membersError && (
-                        <TeamMembersManager
-                            key={`${id}-${membersKey}`}
-                            teamId={id}
-                            initialMembers={initialMembers}
-                            isCoach={isCoach}
-                            isAdmin={isAdmin}
+                    {scientificProjectsError && (
+                        <ErrorAlert message={`Could not load scientific projects. ${scientificProjectsError}`} />
+                    )}
+
+                    {!scientificProjectsError && scientificProjects.length === 0 && (
+                        <EmptyState
+                            title="No scientific projects yet"
+                            description="This team has not submitted any scientific projects."
+                            className="py-8"
                         />
                     )}
 
-                    {membersError && (
-                        <ErrorAlert message={membersError} />
+                    {!scientificProjectsError && scientificProjects.length > 0 && (
+                        <ul className="space-y-3">
+                            {scientificProjects.map((project, index) => (
+                                <li key={project.uri ?? project.link("self")?.href ?? index}>
+                                    <ScientificProjectCardLink
+                                        project={project}
+                                        index={index}
+                                        variant="stacked"
+                                    />
+                                </li>
+                            ))}
+                        </ul>
                     )}
-
-                    <section aria-labelledby="team-projects-heading">
-                        <h2 id="team-projects-heading" className="mt-8 mb-4 text-xl font-semibold">
-                            Scientific Projects
-                        </h2>
-
-                        {scientificProjectsError && (
-                            <ErrorAlert message={`Could not load scientific projects. ${scientificProjectsError}`} />
-                        )}
-
-                        {!scientificProjectsError && scientificProjects.length === 0 && (
-                            <EmptyState
-                                title="No scientific projects yet"
-                                description="This team has not submitted any scientific projects."
-                                className="py-8"
-                            />
-                        )}
-
-                        {!scientificProjectsError && scientificProjects.length > 0 && (
-                            <ul className="space-y-3">
-                                {scientificProjects.map((project, index) => (
-                                    <li key={project.uri ?? project.link("self")?.href ?? index}>
-                                        <ScientificProjectCardLink
-                                            project={project}
-                                            index={index}
-                                            variant="stacked"
-                                        />
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
-
-                </div>
+                </section>
             </div>
         </div>
     );
