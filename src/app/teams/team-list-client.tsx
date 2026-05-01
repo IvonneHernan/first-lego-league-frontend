@@ -61,7 +61,9 @@ function TeamCard({ team }: Readonly<{ team: TeamListItem }>) {
     const formattedCategory = formatTeamCategory(team.category);
     const formattedInscriptionDate = formatInscriptionDate(team.inscriptionDate);
     const categoryTone = team.category?.toLowerCase() ?? "unknown";
-    const hasFacts = Boolean(team.city || team.foundationYear !== undefined || formattedInscriptionDate);
+    const hasFacts = Boolean(
+        team.city || team.foundationYear !== undefined || formattedInscriptionDate,
+    );
 
     return (
         <article className="teams-page-team-card" data-category={categoryTone}>
@@ -93,14 +95,18 @@ function TeamCard({ team }: Readonly<{ team: TeamListItem }>) {
                         {team.foundationYear !== undefined && (
                             <div className="teams-page-team-card__fact">
                                 <div className="teams-page-team-card__fact-label">Founded</div>
-                                <div className="teams-page-team-card__fact-value">{team.foundationYear}</div>
+                                <div className="teams-page-team-card__fact-value">
+                                    {team.foundationYear}
+                                </div>
                             </div>
                         )}
 
                         {formattedInscriptionDate && (
                             <div className="teams-page-team-card__fact">
                                 <div className="teams-page-team-card__fact-label">Registered</div>
-                                <div className="teams-page-team-card__fact-value">{formattedInscriptionDate}</div>
+                                <div className="teams-page-team-card__fact-value">
+                                    {formattedInscriptionDate}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -108,8 +114,12 @@ function TeamCard({ team }: Readonly<{ team: TeamListItem }>) {
 
                 {team.educationalCenter && (
                     <div className="teams-page-team-card__center">
-                        <div className="teams-page-team-card__center-label">Educational center</div>
-                        <p className="teams-page-team-card__center-copy">{team.educationalCenter}</p>
+                        <div className="teams-page-team-card__center-label">
+                            Educational center
+                        </div>
+                        <p className="teams-page-team-card__center-copy">
+                            {team.educationalCenter}
+                        </p>
                     </div>
                 )}
 
@@ -139,9 +149,9 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
             new Set(
                 teams
                     .map((team) => team.category)
-                    .filter((category): category is string => Boolean(category))
-            )
-        ).sort();
+                    .filter((category): category is string => Boolean(category)),
+            ),
+        ).sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
     }, [teams]);
 
     const filteredTeams = useMemo(() => {
@@ -149,7 +159,8 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
 
         return teams.filter((team) => {
             const matchesName = team.name.toLowerCase().includes(normalizedNameQuery);
-            const matchesCategory = categoryFilter === "all" || team.category === categoryFilter;
+            const matchesCategory =
+                categoryFilter === "all" || team.category === categoryFilter;
 
             return matchesName && matchesCategory;
         });
@@ -160,7 +171,9 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
             <div className="rounded-lg border border-border bg-card p-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                     <label className="space-y-2">
-                        <span className="text-sm font-medium text-foreground">Search by name</span>
+                        <span className="text-sm font-medium text-foreground">
+                            Search by name
+                        </span>
                         <input
                             type="search"
                             value={nameQuery}

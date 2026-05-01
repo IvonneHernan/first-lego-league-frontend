@@ -151,7 +151,7 @@ export default async function TeamsPage({
       name: team.name ?? team.id ?? "Unnamed team",
       category: team.category,
       city: team.city,
-      educationalCenter: team.educationalCenter,
+      educationalCenter: team.educationalCenter ?? undefined,
       foundationYear: team.foundationYear,
       inscriptionDate: team.inscriptionDate,
     };
