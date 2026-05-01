@@ -1,6 +1,8 @@
 import { ScientificProjectsService } from "@/api/scientificProjectApi";
 import { TeamsService } from "@/api/teamApi";
 import { UsersService } from "@/api/userApi";
+import { MatchesService } from "@/api/matchesApi";
+import { EditionsService } from "@/api/editionApi";
 import EmptyState from "@/app/components/empty-state";
 import ErrorAlert from "@/app/components/error-alert";
 import { ScientificProjectCardLink } from "@/app/components/scientific-project-card";
@@ -11,7 +13,6 @@ import { NotFoundError, parseErrorMessage } from "@/types/errors";
 import { ScientificProject } from "@/types/scientificProject";
 import { Team, TeamCoach, TeamMember, TeamMemberSnapshot } from "@/types/team";
 import { User } from "@/types/user";
-import TeamShareButton from "./team-share-button";
 
 interface TeamDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -40,16 +41,22 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     const service = new TeamsService(serverAuthProvider);
     const scientificProjectsService = new ScientificProjectsService(serverAuthProvider);
     const userService = new UsersService(serverAuthProvider);
+    const matchesService = new MatchesService(serverAuthProvider);
+    const editionsService = new EditionsService(serverAuthProvider);
 
     let currentUser: User | null = null;
     let team: Team | null = null;
+    let editionYearStr: string | undefined;
     let coaches: TeamCoach[] = [];
     let members: TeamMember[] = [];
     let scientificProjects: ScientificProject[] = [];
+    let matches: Match[] = [];
+    let teamMatchesData: { match: Match; table: string; opponent?: string; round?: string }[] = [];
 
     let error: string | null = null;
     let membersError: string | null = null;
     let scientificProjectsError: string | null = null;
+    const matchesError: string | null = null;
 
     try {
         currentUser = await userService.getCurrentUser().catch(() => null);
@@ -62,17 +69,26 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     }
 
     const teamDisplayName = getTeamDisplayName(team);
+    const teamUri = team?.link("self")?.href ?? `/teams/${id}`;
 
     if (team && !error) {
-        const [membersResult, scientificProjectsResult] = await Promise.allSettled([
+        const editionUri = team.link("edition")?.href;
+
+        const [membersResult, scientificProjectsResult, matchesResult, editionResult] = await Promise.allSettled([
             Promise.all([
                 service.getTeamCoach(id),
                 service.getTeamMembers(id),
             ]),
             teamDisplayName
                 ? scientificProjectsService.getScientificProjectsByTeamName(teamDisplayName)
-                : Promise.resolve([] as ScientificProject[])
+                : Promise.resolve([] as ScientificProject[]),
+            matchesService.getMatches(),
+            editionUri ? editionsService.getEditionByUri(editionUri).catch(() => null) : Promise.resolve(null)
         ]);
+
+        if (editionResult.status === "fulfilled" && editionResult.value) {
+            editionYearStr = String(editionResult.value.year);
+        }
 
         if (membersResult.status === "fulfilled") {
             const [coachesData, membersData] = membersResult.value;
@@ -88,6 +104,61 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
         } else {
             console.error("Error loading scientific projects:", scientificProjectsResult.reason);
             scientificProjectsError = parseErrorMessage(scientificProjectsResult.reason);
+        }
+
+        if (matchesResult.status === "fulfilled") {
+            const allMatches = matchesResult.value;
+
+            const resolvedMatches = await Promise.all(
+                allMatches.map(async (m) => {
+                    const matchIdStr = m.uri ? m.uri.split("/").pop() : String(m.id);
+                    if (!matchIdStr) return { m, hasTeam: false, table: "Unknown" };
+
+                    try {
+                        const [tA, tB, compTable, matchRound] = await Promise.all([
+                            m.link("teamA") ? matchesService.getMatchTeamA(matchIdStr).catch(() => null) : Promise.resolve(null),
+                            m.link("teamB") ? matchesService.getMatchTeamB(matchIdStr).catch(() => null) : Promise.resolve(null),
+                            m.link("competitionTable") ? matchesService.getMatchCompetitionTable(matchIdStr).catch(() => null) : Promise.resolve(null),
+                            m.link("round") ? matchesService.getMatchRound(matchIdStr).catch(() => null) : Promise.resolve(null)
+                        ]);
+
+                        const idA = tA?.id ? String(tA.id) : undefined;
+                        const idB = tB?.id ? String(tB.id) : undefined;
+                        const targetId = String(id);
+
+                        const hasTeam = idA === targetId || idB === targetId;
+                        let opponent: string | undefined;
+
+                        if (hasTeam) {
+                            if (idA === targetId) {
+                                opponent = tB?.name ?? tB?.id ?? "Unknown Team";
+                            } else {
+                                opponent = tA?.name ?? tA?.id ?? "Unknown Team";
+                            }
+                        }
+
+                        const tableId = compTable?.uri ? compTable.uri.split("/").pop() : "Unknown";
+                        let roundStr: string | undefined;
+                        if (matchRound) {
+                            roundStr = matchRound.number !== undefined ? `Round ${matchRound.number}` : undefined;
+                        }
+
+                        return { m, hasTeam, table: tableId ?? "Unknown", opponent, round: roundStr };
+                    } catch {
+                        return { m, hasTeam: false, table: "Unknown" };
+                    }
+                })
+            );
+
+            teamMatchesData = resolvedMatches.filter(r => r.hasTeam).map(r => ({
+                match: r.m,
+                table: r.table,
+                opponent: r.opponent,
+                round: r.round
+            }));
+            matches = teamMatchesData.map(r => r.match);
+        } else {
+            scientificProjectsError = parseErrorMessage(matchesResult.reason);
         }
     }
 
@@ -107,19 +178,44 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                 coach.emailAddress?.trim().toLowerCase() === currentUserEmail
         );
 
-    // ✅ múltiples coaches
-    const coachName =
-        coaches.length > 0
-            ? coaches
-                  .map(c => c.name ?? c.emailAddress ?? "Unnamed coach")
-                  .join(", ")
-            : "No coach assigned";
-
     const initialMembers = members.map(toTeamMemberSnapshot);
 
     const membersKey = initialMembers
         .map(m => m.uri ?? String(m.id ?? m.name ?? ""))
         .join("|");
+
+    const schedule: ScheduleItem[] = [];
+
+    teamMatchesData.forEach(({ match: m, table, opponent, round }) => {
+        if (m.startTime) {
+            const isCompleted = m.state === "COMPLETED" || m.state === "FINISHED";
+            schedule.push({
+                id: `match-${m.id}`,
+                startTime: m.startTime,
+                endTime: m.endTime,
+                eventType: "Robot Game",
+                location: `Table ${table}`,
+                status: isCompleted ? "Completed" : "Pending",
+                opponent: opponent,
+                round: round,
+            });
+        }
+    });
+
+    scientificProjects.forEach((sp, index) => {
+        if (sp.startTime) {
+            const spId = sp.uri ? sp.uri.split("/").pop() : `unknown-${index}`;
+            schedule.push({
+                id: `sp-${spId}`,
+                startTime: sp.startTime,
+                eventType: "Scientific Project",
+                location: sp.room ? `Room ${sp.room}` : "Unknown Room",
+                status: sp.score !== undefined ? "Completed" : "Pending",
+            });
+        }
+    });
+
+    schedule.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
     return (
         <div className="min-h-screen bg-background p-4 sm:p-8">
@@ -132,16 +228,12 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                     <TeamShareButton teamName={teamDisplayName ?? "Unnamed team"} />
                 </div>
 
-                <div className="mb-6 space-y-1 text-sm text-muted-foreground">
-                    {team.city && (
-                        <p>
-                            <strong>City:</strong> {team.city}
-                        </p>
-                    )}
-                    <p>
-                        <strong>Coach:</strong> {coachName}
-                    </p>
-                </div>
+                    <div className="mb-6 space-y-1 text-sm text-muted-foreground">
+                        {team.city && (
+                            <p><strong>City:</strong> {team.city}</p>
+                        )}
+                        <p><strong>Coach:</strong> {coachName}</p>
+                    </div>
 
                 {isAdmin && (
                     <div className="mb-6 rounded-md border border-border p-4">
@@ -194,20 +286,22 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                         />
                     )}
 
-                    {!scientificProjectsError && scientificProjects.length > 0 && (
-                        <ul className="space-y-3">
-                            {scientificProjects.map((project, index) => (
-                                <li key={project.uri ?? project.link("self")?.href ?? index}>
-                                    <ScientificProjectCardLink
-                                        project={project}
-                                        index={index}
-                                        variant="stacked"
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </section>
+                        {!scientificProjectsError && scientificProjects.length > 0 && (
+                            <ul className="space-y-3">
+                                {scientificProjects.map((project, index) => (
+                                    <li key={project.uri ?? project.link("self")?.href ?? index}>
+                                        <ScientificProjectCardLink
+                                            project={project}
+                                            index={index}
+                                            variant="stacked"
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </section>
+
+                </div>
             </div>
         </div>
     );
