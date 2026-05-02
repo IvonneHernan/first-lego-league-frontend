@@ -11,7 +11,7 @@ export class AwardsService {
     constructor(private readonly authStrategy: AuthStrategy) {}
 
     async deleteAward(awardId: string): Promise<void> {
-        await deleteHal(`/awards/${awardId}`, this.authStrategy);
+        await deleteHal(`/awards/${encodeURIComponent(awardId)}`, this.authStrategy);
     }
 
     async getAwardsOfTeam(teamUri: string): Promise<Award[]> {

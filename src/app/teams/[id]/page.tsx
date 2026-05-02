@@ -368,7 +368,7 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                         <ErrorAlert message={`Could not load awards. ${awardsError}`} />
                     )}
                     
-                    {!awardsError && awards.length > 0 && (
+                    {!awardsError && (
                         <AwardsSection 
                             teamId={id} 
                             awards={awards.map(a => ({
