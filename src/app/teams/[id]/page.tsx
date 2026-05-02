@@ -41,31 +41,34 @@ function getTeamDisplayName(team: Team | null): string | null {
     return team.name ?? team.id ?? null;
 }
 
+async function fetchMatchLink<T>(m: Match, rel: string, fetcher: () => Promise<T>): Promise<T | null> {
+    if (!m.link(rel)) return null;
+    return fetcher().catch(() => null);
+}
+
+function getOpponentName(tA: Team | null, tB: Team | null, targetId: string): string | undefined {
+    const idA = tA?.id ? String(tA.id) : undefined;
+    const idB = tB?.id ? String(tB.id) : undefined;
+    
+    if (idA === targetId) return tB?.name ?? tB?.id ?? "Unknown Team";
+    if (idB === targetId) return tA?.name ?? tA?.id ?? "Unknown Team";
+    return undefined;
+}
+
 async function resolveMatchForTeam(m: Match, targetId: string, matchesService: MatchesService) {
     const matchIdStr = m.uri ? m.uri.split("/").pop() : String(m.id);
     if (!matchIdStr) return { m, hasTeam: false, table: "Unknown" };
     
     try {
         const [tA, tB, compTable, matchRound] = await Promise.all([
-            m.link("teamA") ? matchesService.getMatchTeamA(matchIdStr).catch(() => null) : Promise.resolve(null),
-            m.link("teamB") ? matchesService.getMatchTeamB(matchIdStr).catch(() => null) : Promise.resolve(null),
-            m.link("competitionTable") ? matchesService.getMatchCompetitionTable(matchIdStr).catch(() => null) : Promise.resolve(null),
-            m.link("round") ? matchesService.getMatchRound(matchIdStr).catch(() => null) : Promise.resolve(null)
+            fetchMatchLink(m, "teamA", () => matchesService.getMatchTeamA(matchIdStr)),
+            fetchMatchLink(m, "teamB", () => matchesService.getMatchTeamB(matchIdStr)),
+            fetchMatchLink(m, "competitionTable", () => matchesService.getMatchCompetitionTable(matchIdStr)),
+            fetchMatchLink(m, "round", () => matchesService.getMatchRound(matchIdStr))
         ]);
         
-        const idA = tA?.id ? String(tA.id) : undefined;
-        const idB = tB?.id ? String(tB.id) : undefined;
-        
-        const hasTeam = idA === targetId || idB === targetId;
-        let opponent: string | undefined;
-        
-        if (hasTeam) {
-            if (idA === targetId) {
-                opponent = tB?.name ?? tB?.id ?? "Unknown Team";
-            } else {
-                opponent = tA?.name ?? tA?.id ?? "Unknown Team";
-            }
-        }
+        const opponent = getOpponentName(tA, tB, targetId);
+        const hasTeam = opponent !== undefined;
         
         const tableId = compTable?.uri ? compTable.uri.split("/").pop() : "Unknown";
         let roundStr: string | undefined;
