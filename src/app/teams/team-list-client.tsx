@@ -143,6 +143,7 @@ function TeamCard({ team }: Readonly<{ team: TeamListItem }>) {
 export default function TeamListClient({ teams }: TeamListClientProps) {
     const [nameQuery, setNameQuery] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
+    const [educationalCenterFilter, setEducationalCenterFilter] = useState("all");
 
     const categoryOptions = useMemo(() => {
         return Array.from(
@@ -154,6 +155,16 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
         ).sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
     }, [teams]);
 
+    const educationalCenterOptions = useMemo(() => {
+        return Array.from(
+            new Set(
+                teams
+                    .map((team) => team.educationalCenter)
+                    .filter((center): center is string => Boolean(center)),
+            ),
+        ).sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }));
+    }, [teams]);
+
     const filteredTeams = useMemo(() => {
         const normalizedNameQuery = nameQuery.trim().toLowerCase();
 
@@ -161,15 +172,51 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
             const matchesName = team.name.toLowerCase().includes(normalizedNameQuery);
             const matchesCategory =
                 categoryFilter === "all" || team.category === categoryFilter;
+            const matchesEducationalCenter =
+                educationalCenterFilter === "all" ||
+                team.educationalCenter === educationalCenterFilter;
 
-            return matchesName && matchesCategory;
+            return matchesName && matchesCategory && matchesEducationalCenter;
         });
-    }, [teams, nameQuery, categoryFilter]);
+    }, [teams, nameQuery, categoryFilter, educationalCenterFilter]);
+
+    const hasActiveFilters =
+        nameQuery.trim().length > 0 ||
+        categoryFilter !== "all" ||
+        educationalCenterFilter !== "all";
+
+    function clearFilters() {
+        setNameQuery("");
+        setCategoryFilter("all");
+        setEducationalCenterFilter("all");
+    }
 
     return (
-        <div className="space-y-6">
-            <div className="rounded-lg border border-border bg-card p-4">
-                <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-8">
+            <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="page-eyebrow">Browse teams</p>
+                        <h2 className="text-xl font-semibold text-foreground">
+                            Filter teams
+                        </h2>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={clearFilters}
+                        disabled={!hasActiveFilters}
+                        className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                            hasActiveFilters
+                                ? "border border-red-500 bg-red-500 text-white hover:bg-red-600"
+                                : "border border-border text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        }`}
+                    >
+                        Clear filters
+                    </button>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-3">
                     <label className="space-y-2">
                         <span className="text-sm font-medium text-foreground">
                             Search by name
@@ -179,16 +226,18 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
                             value={nameQuery}
                             onChange={(event) => setNameQuery(event.target.value)}
                             placeholder="Search teams..."
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring"
                         />
                     </label>
 
                     <label className="space-y-2">
-                        <span className="text-sm font-medium text-foreground">Category</span>
+                        <span className="text-sm font-medium text-foreground">
+                            Category
+                        </span>
                         <select
                             value={categoryFilter}
                             onChange={(event) => setCategoryFilter(event.target.value)}
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                            className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring"
                         >
                             <option value="all">All categories</option>
                             {categoryOptions.map((category) => (
@@ -198,13 +247,38 @@ export default function TeamListClient({ teams }: TeamListClientProps) {
                             ))}
                         </select>
                     </label>
+
+                    <label className="space-y-2">
+                        <span className="text-sm font-medium text-foreground">
+                            Educational center
+                        </span>
+                        <select
+                            value={educationalCenterFilter}
+                            onChange={(event) => setEducationalCenterFilter(event.target.value)}
+                            className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-ring"
+                        >
+                            <option value="all">All educational centers</option>
+                            {educationalCenterOptions.map((center) => (
+                                <option key={center} value={center}>
+                                    {center}
+                                </option>
+                            ))}
+                        </select>
+                    </label>
                 </div>
+            </section>
+
+            <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                    Showing {filteredTeams.length} team
+                    {filteredTeams.length !== 1 ? "s" : ""}
+                </p>
             </div>
 
             {filteredTeams.length === 0 && (
                 <EmptyState
                     title="No teams match your filters"
-                    description="Try changing the search text or selecting another category."
+                    description="Try changing the search text or selecting another filter."
                 />
             )}
 
