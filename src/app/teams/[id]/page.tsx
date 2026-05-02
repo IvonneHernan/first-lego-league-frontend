@@ -94,6 +94,7 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
 
     let currentUser: User | null = null;
     let team: Team | null = null;
+    let editionYearStr: string | undefined;
     let coaches: TeamCoach[] = [];
     let members: TeamMember[] = [];
     let scientificProjects: ScientificProject[] = [];
@@ -118,6 +119,7 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
     }
 
     const teamDisplayName = getTeamDisplayName(team);
+    const teamUri = team?.link("self")?.href ?? `/teams/${id}`;
 
     if (team && !error) {
         const editionUri = team.link("edition")?.href;
@@ -134,6 +136,10 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
             editionUri ? editionsService.getEditionByUri(editionUri).catch(() => null) : Promise.resolve(null),
             teamUri ? awardsService.getAwardsOfTeam(teamUri) : Promise.resolve([] as Award[])
         ]);
+
+        if (editionResult.status === "fulfilled" && editionResult.value) {
+            editionYearStr = String(editionResult.value.year);
+        }
 
         if (membersResult.status === "fulfilled") {
             const [coachesData, membersData] = membersResult.value;
@@ -351,7 +357,6 @@ export default async function TeamDetailPage(props: Readonly<TeamDetailPageProps
                         <AwardsSection 
                             teamId={id} 
                             awards={awards.map(a => ({
-                                id: a.id ? String(a.id) : undefined,
                                 uri: a.uri ?? a.link("self")?.href,
                                 name: a.name,
                                 title: a.title,
