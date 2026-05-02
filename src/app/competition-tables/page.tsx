@@ -1,4 +1,4 @@
-import { CompetitionTableService, getTableId, getRefereeAssignedTableId } from "@/api/competitionTableApi";
+import { CompetitionTableService, getTableId } from "@/api/competitionTableApi";
 import PageShell from "@/app/components/page-shell";
 import ErrorAlert from "@/app/components/error-alert";
 import { serverAuthProvider } from "@/lib/authProvider";
@@ -13,12 +13,16 @@ import { RefereeOption } from "./assign-referee-dialog";
 
 export const dynamic = "force-dynamic";
 
-function toRefereeOption(r: Referee): RefereeOption {
+function refereeHref(r: Referee): string {
+    return r.link("self")?.href ?? "";
+}
+
+function toRefereeOption(r: Referee, assignedTableId: string | null): RefereeOption {
     return {
-        href: r.link("self")?.href ?? "",
+        href: refereeHref(r),
         name: r.name ?? r.emailAddress ?? "Unknown",
         emailAddress: r.emailAddress ?? "",
-        assignedTableId: getRefereeAssignedTableId(r),
+        assignedTableId,
     };
 }
 
@@ -50,16 +54,33 @@ export default async function CompetitionTablesPage() {
         error = parseErrorMessage(e);
     }
 
-    const allRefereeOptions = allReferees.map(toRefereeOption);
+    const tableIds = tables.map(getTableId);
+
+    // Fetch referees per table to build the correct assignment map
+    const tableRefereeResults = await Promise.allSettled(
+        tableIds.map(async (tableId) => {
+            const referees = await tableService.getRefereesForTable(tableId);
+            return { tableId, referees };
+        })
+    );
 
     const refereesByTable: Record<string, RefereeOption[]> = {};
-    for (const option of allRefereeOptions) {
-        if (option.assignedTableId) {
-            refereesByTable[option.assignedTableId] = [...(refereesByTable[option.assignedTableId] ?? []), option];
+    const assignedMap = new Map<string, string>(); // refereeHref → tableId
+
+    for (const result of tableRefereeResults) {
+        if (result.status === "fulfilled") {
+            const { tableId, referees } = result.value;
+            refereesByTable[tableId] = referees.map(r => toRefereeOption(r, tableId));
+            for (const r of referees) {
+                const href = refereeHref(r);
+                if (href) assignedMap.set(href, tableId);
+            }
         }
     }
 
-    const tableIds = tables.map(getTableId);
+    const allRefereeOptions = allReferees.map(r =>
+        toRefereeOption(r, assignedMap.get(refereeHref(r)) ?? null)
+    );
 
     return (
         <PageShell

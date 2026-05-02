@@ -48,6 +48,14 @@ export class CompetitionTableService {
         );
     }
 
+    async getRefereesForTable(tableId: string): Promise<Referee[]> {
+        return fetchHalCollection<Referee>(
+            `/competitionTables/${encodeURIComponent(tableId)}/referees`,
+            this.authStrategy,
+            "referees"
+        );
+    }
+
     async assignRefereeToTable(refereeHref: string, tableId: string): Promise<void> {
         await patchHal(refereeHref, { supervisesTable: `${API_BASE_URL}/competitionTables/${encodeURIComponent(tableId)}` }, this.authStrategy);
     }
