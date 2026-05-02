@@ -9,12 +9,6 @@ export function getTableId(table: CompetitionTable): string {
     return parts.length > 1 ? decodeURIComponent(parts[1]) : "";
 }
 
-export function getRefereeAssignedTableId(referee: Referee): string | null {
-    const href = referee.link("supervisesTable")?.href;
-    if (!href) return null;
-    const parts = href.split("/competitionTables/");
-    return parts.length > 1 ? decodeURIComponent(parts[1]) : null;
-}
 
 export class CompetitionTableService {
     constructor(private readonly authStrategy: AuthStrategy) {}
