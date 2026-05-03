@@ -1,6 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import { getEncodedResourceId } from "@/lib/halRoute";
 import { ChevronLeft, ChevronRight, Film, FileIcon, X, ExternalLink, PlayCircle } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -27,13 +28,13 @@ function isVideo(type?: string): boolean {
     return (type?.startsWith("video/")) ?? false;
 }
 
-function getMediaUrl(item: MediaItem): string | null {
-    return item.url ?? item.id ?? null;
+function getMediaResourceId(item: MediaItem): string | null {
+    return getEncodedResourceId(item.uri ?? item.link?.("self")?.href);
 }
 
 export function getMediaDetailHref(item: MediaItem): string | null {
-    const url = getMediaUrl(item);
-    return url ? `/media?url=${encodeURIComponent(url)}` : null;
+    const mediaId = getMediaResourceId(item);
+    return mediaId ? `/media?url=${mediaId}` : null;
 }
 
 // ─── Shared thumbnail renderers ───────────────────────────────────────────────

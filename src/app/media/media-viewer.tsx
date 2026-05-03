@@ -34,7 +34,9 @@ function getMediaUrl(item: MediaViewerItem): string {
 }
 
 function getMediaHref(item: MediaViewerItem): string {
-    return `/media?url=${encodeURIComponent(getMediaUrl(item))}`;
+    return item.id
+        ? `/media?url=${item.id}`
+        : `/media?url=${encodeURIComponent(getMediaUrl(item))}`;
 }
 
 function getYouTubeId(url?: string): string | null {

@@ -36,9 +36,17 @@ function getMediaUrl(content: MediaContent): string {
     return content.url ?? content.id ?? "";
 }
 
+function getMediaDetailId(content: MediaContent): string | null {
+    return getEncodedResourceId(content.uri ?? content.link?.("self")?.href);
+}
+
+function getMediaIdentity(content: MediaContent): string {
+    return getMediaDetailId(content) ?? getMediaUrl(content);
+}
+
 function toMediaViewerItem(content: MediaContent): MediaViewerItem {
     return {
-        id: content.id,
+        id: getMediaDetailId(content) ?? content.id,
         type: content.type,
         url: getMediaUrl(content),
     };
@@ -139,7 +147,7 @@ export default async function MediaPage({ searchParams }: MediaPageProps) {
     const { edition, mediaItems, warning } = await getEditionContext(media, mediaService, editionService);
     const normalizedMediaItems = mediaItems.length > 0 ? mediaItems : [media];
     const activeIndex = Math.max(
-        normalizedMediaItems.findIndex((item) => getMediaUrl(item) === getMediaUrl(media)),
+        normalizedMediaItems.findIndex((item) => getMediaIdentity(item) === getMediaIdentity(media)),
         0
     );
     const editionId = getEncodedResourceId(edition?.uri);
