@@ -4,7 +4,6 @@ import { fetchHalCollection, fetchHalPagedCollection, fetchHalResource, createHa
 import type { HalPage } from "@/types/pagination";
 import { Resource } from "halfred";
 import { ApiError } from "@/types/errors";
-import error from "@/app/error";
 
 export type CreateUserPayload = {
     username: string;
@@ -13,7 +12,7 @@ export type CreateUserPayload = {
 };
 
 export class UsersService {
-    constructor(private readonly authStrategy: AuthStrategy) { }
+    constructor(private readonly authStrategy: AuthStrategy) {}
 
     async getUsers(): Promise<User[]> {
         return fetchHalCollection<User>('/users', this.authStrategy, 'users');
@@ -31,17 +30,10 @@ export class UsersService {
     async getCurrentUser(): Promise<User | null> {
         const auth = await this.authStrategy.getAuth();
         if (!auth) return null;
-
         try {
             return await fetchHalResource<User>('/identity', this.authStrategy);
-        } catch (error: any) {
-
-            if (error?.status === 401) {
-                return null;
-            }
-            // If it's a 403 (Forbidden), 500 (Server Error), or TypeError (Network)
-            // we let the caller handle it.
-            throw error;
+        } catch {
+            return null;
         }
     }
 
