@@ -199,7 +199,7 @@ export default async function MatchesPage({ searchParams }: Readonly<{ searchPar
         const urlParams = new URLSearchParams();
         if (year) urlParams.set("year", year);
         if (newView === "calendar") urlParams.set("view", "calendar");
-        if (params.page && newView !== "calendar") urlParams.set("page", String(params.page));
+        if (urlPage > 1 && newView !== "calendar") urlParams.set("page", String(urlPage));
         const qs = urlParams.toString();
         return qs ? `/matches?${qs}` : "/matches";
     }

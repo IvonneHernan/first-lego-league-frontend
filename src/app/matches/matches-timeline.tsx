@@ -69,7 +69,16 @@ export function MatchesTimeline({
     const tables = Array.from(new Set(validMatches.map(m => m.tableId))).sort((a, b) => a.localeCompare(b));
 
     return (
-        <div className="overflow-x-auto border border-border bg-card rounded-md shadow-sm">
+        <div className="overflow-x-auto border border-border bg-card rounded-md shadow-sm relative">
+            {/* Column headers */}
+            <div className="flex min-w-[800px] border-b border-border sticky top-0 z-10 bg-secondary/50 backdrop-blur-sm">
+                <div className="w-20 flex-shrink-0 border-r border-border" />
+                {tables.map(table => (
+                    <div key={table} className="flex-1 min-w-[200px] border-r border-border px-2 py-2 text-sm font-medium flex items-center justify-center truncate">
+                        {table === "Unassigned" ? "Unassigned" : table}
+                    </div>
+                ))}
+            </div>
             <div className="flex min-w-[800px] relative">
                 {/* Time Axis */}
                 <div className="w-20 flex-shrink-0 border-r border-border bg-secondary/30 relative" style={{ height: totalMinutes * pixelsPerMinute }}>
