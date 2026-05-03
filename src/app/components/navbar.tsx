@@ -68,9 +68,9 @@ export default function Navbar() {
                     {/* Desktop Menu */}
                     <div className="hidden lg:flex items-center gap-1">
                         {mainNavLinks.map(({ href, label }) => (
-                            <Link 
-                                key={href} 
-                                href={getHref(href)} 
+                            <Link
+                                key={href}
+                                href={getHref(href)}
                                 className={`px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${pathname.startsWith(href) ? 'text-accent border-b-2 border-accent' : 'text-muted-foreground hover:text-foreground border-b-2 border-transparent'}`}
                             >
                                 {label}
@@ -79,7 +79,7 @@ export default function Navbar() {
 
                         {/* Dropdown Click Modules*/}
                         <div className="relative">
-                            <button 
+                            <button
                                 onClick={() => setIsModulesOpen(!isModulesOpen)}
                                 className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-colors rounded-md whitespace-nowrap ${isModulesOpen ? 'bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                             >
@@ -88,11 +88,20 @@ export default function Navbar() {
 
                             {isModulesOpen && (
                                 <>
-                                    <div 
-                                        className="fixed inset-0 z-[-1] cursor-default" 
-                                        onClick={() => setIsModulesOpen(false)} 
+                                    <div
+                                        className="fixed inset-0 z-40 cursor-default bg-transparent"
+                                        onClick={() => setIsModulesOpen(false)}
+
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Escape" || e.key === "Enter") {
+                                                setIsModulesOpen(false);
+                                            }
+                                        }}
+                                        role="button"
+                                        tabIndex={-1}
+                                        aria-label="Close menu"
                                     />
-                                    
+
                                     <div className="absolute left-0 top-full pt-2 w-48 flex flex-col z-50 animate-in fade-in zoom-in-95">
                                         <div className="flex flex-col rounded-md border border-border bg-card p-1 shadow-lg">
                                             {moduleLinks
@@ -102,7 +111,7 @@ export default function Navbar() {
                                                         key={link.href}
                                                         href={getHref(link.href)}
                                                         className="block rounded-md px-3 py-2 text-sm hover:bg-secondary transition-colors"
-                                                        onClick={() => setIsModulesOpen(false)} // Se cierra al seleccionar una opción
+                                                        onClick={() => setIsModulesOpen(false)}
                                                     >
                                                         {link.label}
                                                     </Link>
