@@ -2,7 +2,7 @@ import { VolunteersService } from "@/api/volunteerApi";
 import { UsersService } from "@/api/userApi";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { revalidatePath } from "next/cache";
-import EditVolunteerModal from "./_edit-volunteer-modal";
+import EditVolunteerModal from "./edit-volunteer-modal";
 import EmptyState from "@/app/components/empty-state";
 import { Volunteer } from "@/types/volunteer";
 import { User } from "@/types/user";

@@ -7,7 +7,7 @@ import { parseErrorMessage } from "@/types/errors";
 import { Volunteer } from "@/types/volunteer";
 import { User } from "@/types/user";
 import { isAdmin } from "@/lib/authz";
-import VolunteersClient, { VolunteerItem } from "./_volunteers-client";
+import VolunteersClient, { VolunteerItem } from "./volunteers-client";
 
 type AuthenticatedUser = User & {
     username?: string;
