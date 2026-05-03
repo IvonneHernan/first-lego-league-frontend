@@ -32,8 +32,10 @@ export class UsersService {
         if (!auth) return null;
         try {
             return await fetchHalResource<User>('/identity', this.authStrategy);
-        } catch (error: any) {
-            if (error?.statusCode === 401) {
+        } catch (error: unknown) {
+            const apiError = error as { statusCode?: number; status?: number };
+            
+            if (apiError?.statusCode === 401 || apiError?.status === 401) {
                 return null;
             }
             throw error;
