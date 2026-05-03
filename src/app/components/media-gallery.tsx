@@ -328,7 +328,7 @@ export function MediaGallery({ mediaContents }: MediaGalleryProps) {
             {/* Empty state when filter yields no results */}
             {filtered.length === 0 && (
                 <div className="flex h-32 items-center justify-center rounded-xl border border-border text-sm text-muted-foreground">
-                    No {filter === "photo" ? "photos" : "videos"} in this edition.
+                    {filter === "photo" ? "No photos in this edition." : filter === "video" ? "No videos in this edition." : "No media in this edition."}
                 </div>
             )}
 
