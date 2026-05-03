@@ -69,15 +69,15 @@ export function MatchesTimeline({
     const tables = Array.from(new Set(validMatches.map(m => m.tableId))).sort((a, b) => a.localeCompare(b));
 
     return (
-        <div className="overflow-auto max-h-[75vh] border border-border bg-card rounded-md shadow-sm">
+        <div className="overflow-x-auto border border-border bg-card rounded-md shadow-sm">
             <div className="flex min-w-[800px] relative">
                 {/* Time Axis */}
-                <div className="w-20 flex-shrink-0 border-r border-border bg-secondary/30 relative" style={{ height: totalMinutes * pixelsPerMinute + 40 }}>
+                <div className="w-20 flex-shrink-0 border-r border-border bg-secondary/30 relative" style={{ height: totalMinutes * pixelsPerMinute }}>
                     {Array.from({ length: Math.floor((maxMin - minMin) / 60) + 1 }).map((_, i) => {
                         const hour = Math.floor(minMin / 60) + i;
                         return (
-                            <div key={hour} className="absolute w-full text-right pr-2 text-xs text-muted-foreground border-t border-border/50" style={{ top: i * 60 * pixelsPerMinute + 40 }}>
-                                <span className="-translate-y-1/2 block">{hour.toString().padStart(2, '0')}:00</span>
+                            <div key={hour} className="absolute w-full text-right pr-2 text-xs text-muted-foreground border-t border-border/50" style={{ top: i * 60 * pixelsPerMinute }}>
+                                <span className="inline-block -translate-y-1/2 bg-card px-1 border border-border/50 rounded-sm shadow-sm">{hour.toString().padStart(2, '0')}:00</span>
                             </div>
                         );
                     })}
@@ -87,17 +87,14 @@ export function MatchesTimeline({
                 {tables.map(table => {
                     const tableMatches = validMatches.filter(m => m.tableId === table);
                     return (
-                        <div key={table} className="flex-1 min-w-[200px] border-r border-border relative" style={{ height: totalMinutes * pixelsPerMinute + 40 }}>
-                            <div className="h-10 border-b border-border bg-secondary/50 flex items-center justify-center font-medium text-sm sticky top-0 z-10">
-                                {table === "Unassigned" ? "Unassigned" : `Table ${table}`}
-                            </div>
+                        <div key={table} className="flex-1 min-w-[200px] border-r border-border relative" style={{ height: totalMinutes * pixelsPerMinute }}>
                             <div className="relative w-full h-full">
                                 {tableMatches.map((m, idx) => {
                                     const top = (m.startMin - minMin) * pixelsPerMinute;
                                     const height = Math.max((m.endMin - m.startMin) * pixelsPerMinute, 20);
                                 
                                     return (
-                                        <div key={m.id ?? idx} className="absolute left-1 right-1 bg-primary/10 border border-primary/30 rounded-sm p-1.5 text-xs overflow-hidden hover:bg-primary/20 hover:z-20 transition-colors shadow-sm" style={{ top: top + 40, height }}>
+                                        <div key={m.id ?? idx} className="absolute left-1 right-1 bg-primary/10 border border-primary/30 rounded-sm p-1.5 text-xs overflow-hidden hover:bg-primary/20 hover:z-20 transition-colors shadow-sm" style={{ top: top, height }}>
                                             <div className="font-semibold text-[10px] text-primary mb-0.5">{formatMatchTime(m.startTime)} - {formatMatchTime(m.endTime)}</div>
                                             {m.matchId ? (
                                                 <Link href={`/matches/${m.matchId}${yearQuery}`} className="hover:underline leading-tight block font-medium">
