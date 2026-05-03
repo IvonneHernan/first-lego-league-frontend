@@ -293,7 +293,6 @@ export function MediaGallery({ mediaContents }: MediaGalleryProps) {
 
     return (
         <div className="flex flex-col gap-3">
-            {/* Filter pills */}
             {showFilters && (
                 <div className="flex gap-2">
                     {filterOptions.map(({ label, value }) => (
@@ -313,26 +312,19 @@ export function MediaGallery({ mediaContents }: MediaGalleryProps) {
                 </div>
             )}
 
-            {/* Hero */}
             {hero && <HeroSection item={hero} index={0} onOpen={openLightbox} />}
 
-            {/* 2×2 grid */}
             {gridItems.length > 0 && <GridSection items={gridItems} startIndex={1} onOpen={openLightbox} />}
 
-            {/* Row of 3 */}
             {rowItems.length > 0 && <RowSection items={rowItems} startIndex={5} onOpen={openLightbox} />}
 
-            {/* Carousel for the rest */}
             {carouselItems.length > 0 && <CarouselSection items={carouselItems} startIndex={8} onOpen={openLightbox} />}
-
-            {/* Empty state when filter yields no results */}
             {filtered.length === 0 && (
                 <div className="flex h-32 items-center justify-center rounded-xl border border-border text-sm text-muted-foreground">
                     {filter === "photo" ? "No photos in this edition." : filter === "video" ? "No videos in this edition." : "No media in this edition."}
                 </div>
             )}
 
-            {/* Lightbox */}
             <Dialog.Root open={open} onOpenChange={setOpen}>
                 <Dialog.Portal>
                     <Dialog.Overlay className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
