@@ -15,12 +15,12 @@ interface EditionStateControlsProps {
     readonly isAdmin: boolean;
 }
 
-const STATE_ORDER = ["DRAFT", "ACTIVE", "FINISHED"] as const;
+const STATE_ORDER = ["DRAFT", "OPEN", "CLOSED"] as const;
 
 type EditionState = (typeof STATE_ORDER)[number];
 
 function normalizeState(state?: string): EditionState | null {
-    if (state === "DRAFT" || state === "ACTIVE" || state === "FINISHED") {
+    if (state === "DRAFT" || state === "OPEN" || state === "CLOSED") {
         return state;
     }
 
@@ -31,8 +31,8 @@ function getNextState(state?: string): EditionState | null {
     const normalizedState = normalizeState(state);
 
     if (!normalizedState) return null;
-    if (normalizedState === "DRAFT") return "ACTIVE";
-    if (normalizedState === "ACTIVE") return "FINISHED";
+    if (normalizedState === "DRAFT") return "OPEN";
+    if (normalizedState === "OPEN") return "CLOSED";
 
     return null;
 }
@@ -41,10 +41,10 @@ function getStateBadgeClassName(state?: string): string {
     switch (normalizeState(state)) {
         case "DRAFT":
             return "bg-gray-100 text-gray-700 border-gray-200";
-        case "ACTIVE":
+        case "OPEN":
             return "bg-green-100 text-green-700 border-green-200";
-        case "FINISHED":
-            return "bg-zinc-100 text-zinc-700 border-zinc-200";
+        case "CLOSED":
+            return "bg-red-100 text-red-700 border-red-200";
         default:
             return "bg-muted text-muted-foreground border-border";
     }
@@ -72,14 +72,11 @@ export default function EditionStateControls({
         setIsSubmitting(true);
         setError(null);
 
-        try {
-            await service.updateEditionState(
-            editionId,
-            nextState
-        );
+       try {
+    const updatedEdition = await service.updateEditionState(editionId, nextState);
 
-        setCurrentState(nextState);
-        setIsDialogOpen(false);
+    setCurrentState(updatedEdition.state ?? nextState);
+    setIsDialogOpen(false);
         } catch (e) {
             setError(e instanceof Error ? e.message : "Failed to update edition state.");
         } finally {

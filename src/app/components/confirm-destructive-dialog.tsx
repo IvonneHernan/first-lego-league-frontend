@@ -58,13 +58,16 @@ export default function ConfirmDestructiveDialog({
                 }
             }}
         >
-            <dialog
-                open
+            <div
+                role="dialog"
                 aria-modal="true"
+                aria-labelledby="confirm-dialog-title"
                 className="w-full max-w-md border border-border bg-card p-6 text-card-foreground shadow-xl"
             >
                 <div className="space-y-3">
-                    <h2 className="text-lg font-semibold">{title}</h2>
+                    <h2 id="confirm-dialog-title" className="text-lg font-semibold">
+                        {title}
+                    </h2>
 
                     <div className="text-sm leading-6 text-muted-foreground">
                         {description}
@@ -90,7 +93,7 @@ export default function ConfirmDestructiveDialog({
                         {isPending ? pendingLabel : confirmLabel}
                     </Button>
                 </div>
-            </dialog>
+            </div>
         </div>
     );
 }

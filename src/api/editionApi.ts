@@ -10,8 +10,6 @@ import {
     fetchHalCollection,
     fetchHalPagedCollection,
     fetchHalResource,
-    mergeHal,
-    patchHal,
     updateHalResource,
 } from "./halClient";
 
@@ -53,7 +51,7 @@ export class EditionsService {
             this.authStrategy,
             "editions",
             page,
-            size
+            size,
         );
     }
 
@@ -65,7 +63,7 @@ export class EditionsService {
     async getEditionByUri(resourceUri: string): Promise<Edition> {
         return fetchHalResource<Edition>(
             normalizeResourcePath(resourceUri),
-            this.authStrategy
+            this.authStrategy,
         );
     }
 
@@ -74,7 +72,7 @@ export class EditionsService {
         const editions = await fetchHalCollection<Edition>(
             `/editions/search/findByYear?year=${normalizedYear}`,
             this.authStrategy,
-            "editions"
+            "editions",
         );
 
         return editions.length > 0 ? editions[0] : null;
@@ -84,7 +82,7 @@ export class EditionsService {
         return fetchHalCollection<Edition>(
             `/editions/search/findByVenueName?venueName=${encodeURIComponent(venueName)}`,
             this.authStrategy,
-            "editions"
+            "editions",
         );
     }
 
@@ -94,7 +92,7 @@ export class EditionsService {
         return fetchHalCollection<Team>(
             `/editions/${editionId}/teams`,
             this.authStrategy,
-            "teams"
+            "teams",
         );
     }
 
@@ -103,7 +101,7 @@ export class EditionsService {
             "/editions",
             data,
             this.authStrategy,
-            "edition"
+            "edition",
         );
     }
 
@@ -114,25 +112,49 @@ export class EditionsService {
             `/editions/${editionId}`,
             data,
             this.authStrategy,
-            "edition"
+            "edition",
         );
     }
 
-    async updateEditionState(id: string, newState: string): Promise<Edition> {
-        const editionId = encodeURIComponent(id);
+async updateEditionState(id: string, newState: string): Promise<Edition> {
+    const editionId = encodeURIComponent(id);
+    const authorization = await this.authStrategy.getAuth();
 
-        const resource = await patchHal(
-            `/editions/${editionId}`,
-            { state: newState },
-            this.authStrategy
+    const response = await fetch(`${API_BASE_URL}/editions/${editionId}/state`, {
+        method: "PATCH",
+        headers: {
+            Accept: "application/vnd.hal+json",
+            "Content-Type": "application/json",
+            ...(authorization ? { Authorization: authorization } : {}),
+        },
+        body: JSON.stringify({ state: newState }),
+        cache: "no-store",
+    });
+
+    if (!response.ok) {
+        const message = await response.text();
+
+        throw new ApiError(
+            message || `Failed to update edition state. HTTP ${response.status}`,
+            response.status,
+            true,
         );
-
-        if (!resource) {
-            return { state: newState } as Edition;
-        }
-
-        return mergeHal<Edition>(resource);
     }
+
+    const updatedEdition = await this.getEditionById(id);
+
+    if (updatedEdition.state !== newState) {
+        throw new ApiError(
+            `Edition state was not persisted. Expected ${newState}, but API returned ${
+                updatedEdition.state ?? "UNKNOWN"
+            }.`,
+            500,
+            true,
+        );
+    }
+
+    return updatedEdition;
+}
 
     async getEditionCompetitionTables(id: string): Promise<EditionCompetitionTable[]> {
         const encodedId = encodeURIComponent(id);
