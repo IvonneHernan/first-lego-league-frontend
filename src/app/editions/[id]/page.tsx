@@ -22,7 +22,10 @@ import { User } from "@/types/user";
 import { parseErrorMessage, NotFoundError } from "@/types/errors";
 import Link from "next/link";
 import { getTeamDisplayName } from "@/lib/teamUtils";
-import AddMediaForm from "./_add-media-form";
+import MediaUploadForm from "@/app/components/media-upload-form";
+import { redirect } from "next/navigation";
+import DeleteEditionButton from "./delete-edition-button";
+
 
 interface EditionDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -114,12 +117,13 @@ async function fetchByEditionUri(
     return result;
 }
 
-function toMediaItem(content: MediaContent): MediaItem {
+function toMediaItem(content: MediaContent, editionUri: string | null | undefined): MediaItem {
     return {
         uri: content.uri ?? content.link?.("self")?.href,
         id: content.id,
         type: content.type,
-        url: content.url ?? content.id,
+        url: content.url ?? content.id,  // real API omits `url`; the `id` field holds the media URL
+        edition: editionUri ?? content.edition,
     };
 }
 
@@ -142,6 +146,13 @@ function getAwardsByTeamUri(awards: Award[]): Map<string, Award[]> {
 
 export default async function EditionDetailPage(props: Readonly<EditionDetailPageProps>) {
     const { id } = await props.params;
+
+    async function deleteEditionAction() {
+    "use server";
+
+    await new EditionsService(serverAuthProvider).deleteEdition(id);
+    redirect("/editions");
+}
     const editionsService = new EditionsService(serverAuthProvider);
     const awardsService = new AwardsService(serverAuthProvider);
     const mediaService = new MediaService(serverAuthProvider);
@@ -232,13 +243,17 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                         </div>
 
                         {currentUser && isAdmin(currentUser) && (
+                        <div className="flex gap-2">
                             <Link
                                 href={`/editions/${id}/edit`}
                                 className={buttonVariants({ variant: "default", size: "sm" })}
                             >
                                 ✏️ edit
                             </Link>
-                        )}
+
+                            <DeleteEditionButton deleteAction={deleteEditionAction} />
+                        </div>
+                    )}
                     </div>
 
                     {error && (
@@ -325,13 +340,13 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                                 </h2>
 
                                 {currentUser && isAdmin(currentUser) && edition && (
-                                    <AddMediaForm editionUri={`/editions/${id}`} />
+                                    <MediaUploadForm editionId={id} />
                                 )}
 
                                 {mediaError && <ErrorAlert message={mediaError} />}
 
                                 {!mediaError && mediaContents.length > 0 && (
-                                    <MediaSection mediaContents={mediaContents.map(toMediaItem)} />
+                                    <MediaSection mediaContents={mediaContents.map((media) => toMediaItem(media, edition?.uri))} />
                                 )}
 
                                 {!mediaError && mediaContents.length === 0 && (
